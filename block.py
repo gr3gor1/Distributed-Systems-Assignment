@@ -6,8 +6,6 @@ import blockchain
 
 class Block:
 	def __init__(self):
-		##set
-
 		#self.previousHash
 		#self.timestamp
 		#self.hash
