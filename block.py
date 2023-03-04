@@ -1,6 +1,5 @@
 from time import time
 import hashlib
-import transaction
 
 class Block:
 
@@ -18,6 +17,6 @@ class Block:
 		con_hash = hashlib.sha256(content.encode()).hexdigest()
 		return con_hash
 
-	def add_transaction(self,transaction transaction):
+	def add_transaction(self,transaction):
 		#add a transaction to the block
 		self.listOfTransactions.append(transaction)
