@@ -13,10 +13,9 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 
-
 class wallet:
 
-	def __init__(self):
+	def __init__(self,NBCs):
 		random = Crypto.Random.new().read()
 		#create private key
 		self.private_key = RSA.generate(1024,random)
@@ -25,6 +24,17 @@ class wallet:
 		#hex public key
 		self.public_key_hex = binascii.hexlify(self.public_key.exportKey(format='DER')).decode('ascii')
 		#wallet address is equal to the SHA256 hash of the public key iin hexadecimal format
-		self.address = hashlib.sha256(self.public_key_hex.encode('ascii')).hexdigest()
+		self.address = self.public_key_hex
 		#transaction of the wallet
 		self.transactions = []
+		#total money in the wallet
+		self.total = NBCs
+
+		def add_transaction(self,transaction):
+			self.transactions.append(transaction)
+
+		def balance(self):
+			for i in self.transactions:
+				amount =  self.total + i['value']
+			return amount
+			
