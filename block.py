@@ -18,7 +18,7 @@ class Block:
 		#calculate self.hash
 		block_contents = str(self.timestamp) + str(self.transactions) + str(self.previous_hash) + str(self.nonce)
 		block_hash = sha256(block_contents.encode())
-    	return block_hash.hexdigest()
+		return block_hash.hexdigest()
 
 
 	def add_transaction(transaction transaction, blockchain blockchain):
