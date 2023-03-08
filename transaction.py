@@ -21,13 +21,13 @@ class Transaction:
 
 
 
-        #self.sender_address: To public key του wallet από το οποίο προέρχονται τα χρήματα
-        #self.receiver_address: To public key του wallet στο οποίο θα καταλήξουν τα χρήματα
-        #self.amount: το ποσό που θα μεταφερθεί
-        #self.transaction_id: το hash του transaction
-        #self.transaction_inputs: λίστα από Transaction Input 
-        #self.transaction_outputs: λίστα από Transaction Output 
-        #selfSignature
+        self.sender_address = sender_address            #To public key του wallet από το οποίο προέρχονται τα χρήματα
+        self.receiver_address = recipient_address       #To public key του wallet στο οποίο θα καταλήξουν τα χρήματα
+        self.amount = value                             #το ποσό που θα μεταφερθεί
+        self.transaction_id =                            #το hash του transaction
+        self.transaction_inputs =                         #λίστα από Transaction Input 
+        self.transaction_outputs =                      #λίστα από Transaction Output 
+        self.signature = sender_private_key
 
 
     
@@ -40,4 +40,5 @@ class Transaction:
         """
         Sign transaction with private key
         """
-       
+        signature = PKCS1_v1_5.new(self.signature).sign(self.transaction_id)
+        return signature
