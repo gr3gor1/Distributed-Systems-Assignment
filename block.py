@@ -18,6 +18,6 @@ class Block:
 		return block_hash.hexdigest()
 
 
-	def add_transaction(transaction transaction, blockchain blockchain):
+	def add_transaction(self, transaction):
 		#add a transaction to the block
 		self.transactions.append(transaction)
