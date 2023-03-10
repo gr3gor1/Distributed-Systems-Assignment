@@ -2,8 +2,8 @@ import block
 import wallet
 
 class node:
-	def __init__():
-		self.NBC=100;
+	def __init__(self):
+		self.NBCs=100
 		##set
 
 		#self.chain
@@ -11,12 +11,12 @@ class node:
 		#self.NBCs
 		#self.wallet
 
-		#slef.ring[]   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
+		#self.ring[]   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 
 
 
 
-	def.create_new_block():
+	def create_new_block():
 
 	def create_wallet():
 		#create a wallet for this node, with a public key and a private key
@@ -36,7 +36,7 @@ class node:
 
 
 
-	def validdate_transaction():
+	def validate_transaction():
 		#use of signature and NBCs balance
 
 
@@ -59,7 +59,7 @@ class node:
 
 
 
-	#concencus functions
+	#consensus functions
 
 	def valid_chain(self, chain):
 		#check for the longer chain accroose all nodes
