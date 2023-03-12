@@ -1,5 +1,6 @@
 from time import time
-import hashlib
+import json
+from hashlib import sha256
 
 class Block:
 
@@ -13,9 +14,9 @@ class Block:
 	
 	def myHash(self):
 		#compute hash of block
-		content =  str(self.previousHash) + str(self.timestamp) + str(self.listOfTransactions) + str(self.nonce)
-		con_hash = hashlib.sha256(content.encode()).hexdigest()
-		return con_hash
+		block_string = json.dumps(self.__dict__, sort_keys=True)
+		return sha256(block_string.encode()).hexdigest()
+
 
 	def add_transaction(self,transaction):
 		#add a transaction to the block

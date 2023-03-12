@@ -24,24 +24,12 @@ class Transaction:
         #self.transaction_outputs: λίστα από Transaction Output
         self.transaction_outputs = [] 
         #self.signature
-        self.signature = None
+        self.signature = self.sign_transaction()
         #self.private_key
         self.private_key = sender_private_key
-
-    def to_dict(self):
-        # Convert transaction object to a dictionary
-        transaction_dict = OrderedDict()
-        transaction_dict['sender_address'] = self.sender_address
-        transaction_dict['recipient_address'] = self.receiver_address
-        transaction_dict['value'] = self.amount
-        transaction_dict['transaction_id'] = self.transaction_id
-        transaction_dict['transaction_inputs'] = self.transaction_inputs
-        transaction_dict['transaction_outputs'] = self.transaction_outputs
-        transaction_dict['signature'] = self.signature
-        return transaction_dict
 
     def sign_transaction(self):
         #Sign transaction with private key
         sender = PKCS1_v1_5.new(RSA.importKey(binascii.unhexlify(self.private_key)))
-        hash = SHA.new(str(self.to_dict()).encode('utf8'))
+        hash = SHA.new(str(self.__dict__).encode('utf8'))
         self.signature = binascii.hexlify(sender.sign(hash)).decode('ascii')

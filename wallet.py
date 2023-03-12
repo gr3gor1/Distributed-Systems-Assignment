@@ -23,7 +23,7 @@ class wallet:
 		self.public_key = self.private_key.publickey()
 		#hex public key
 		self.public_key_hex = binascii.hexlify(self.public_key.exportKey(format='DER')).decode('ascii')
-		#wallet address is equal to the SHA256 hash of the public key iin hexadecimal format
+		#wallet address is equal to the SHA256 hash of the public key in hexadecimal format
 		self.address = self.public_key_hex
 		#transaction of the wallet
 		self.transactions = []

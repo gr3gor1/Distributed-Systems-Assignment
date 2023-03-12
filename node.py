@@ -10,8 +10,6 @@ class node:
 		self.ring = {}   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 
 
-
-
 	#def create_new_block():
 
 	#def create_wallet():
@@ -33,8 +31,6 @@ class node:
 		#if enough transactions  mine
 
 	#def mine_block():
-
-
 
 	#def broadcast_block():
 
