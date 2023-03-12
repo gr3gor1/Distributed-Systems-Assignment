@@ -3,12 +3,12 @@ import json
 from hashlib import sha256
 
 class Block:
-	def __init__(self,index,previousHash):
+	def __init__(self,index,previousHash,nonce):
 		self.index = index
 		self.previousHash = previousHash
 		self.timestamp = time.time()
 		self.hash = self.myHash()
-		self.nonce=0
+		self.nonce=nonce
 		self.listOfTransactions=[]
 	
 	def myHash(self):

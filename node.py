@@ -1,12 +1,18 @@
 import block
 import wallet
 import blockchain
+import requests
+
+CAPACITY = 4
 
 class node:
-	def __init__(self,bootstrap=False):
+	def __init__(self,ip,port,bootstrap=False):
+		self.ip = ip
+		self.port = port
 		self.boot = bootstrap
 		self.blockchain = blockchain.Blockchain()
-		self.pending_transactions = []
+		self.uncomplete_transactions = []
+		self.id = None
 		self.NBCs=500 ;
 		self.NBC = 0;
 		self.wallet = None
@@ -21,9 +27,10 @@ class node:
 		index = previous_block.index + 1
 		previous_hash = previous_block.hash
 		new_block = block.Block(index, previous_hash)
-		for transaction in self.pending_transactions:
+		pending_transactions = self.uncomplete_transactions[:CAPACITY]
+		for transaction in pending_transactions:
 			new_block.add_transaction(transaction)
-		self.pending_transactions = []
+		self.uncomplete_transactions = self.uncomplete_transactions[CAPACITY:]
 		new_block.hash = new_block.myHash()
 		return new_block
 
@@ -31,9 +38,23 @@ class node:
 		#create a wallet for this node, with a public key and a private key
 		self.wallet = wallet.walletWallet(amount)
 
-	#def register_node_to_ring():
+	def register_node_to_ring(self,address):
 		#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
-		#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
+		#bootstrap node informs all other nodes and gives the request node an id and 100 NBCs
+		if self.boot:
+			return ("I am bootstrap node")
+		
+		data = {'ip':self.ip,'port':self.port}
+		response = requests.post(address+"/add_node",json=data)
+
+		if response.status_code == 200:
+			result = response.json()
+			self.id = result.id
+			self.ring = result['ring']
+			self.wallet.total = result['total_wallet_amount']
+			return result
+		else:
+			return None
 
 	#def create_transaction(sender, receiver, signature):
 		#remember to broadcast it
