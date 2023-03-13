@@ -17,8 +17,7 @@ from uuid import uuid4
 class wallet:
 
 	def __init__(self):
-		##set
-
+		
 		key = RSA.generate(2048)
 		public_key = key.publickey()
 		self.public_key = public_key

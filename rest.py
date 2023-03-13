@@ -5,7 +5,7 @@ from flask_cors import CORS
 
 import block
 import node
-import blockchain
+from blockchain import Blockchain
 import wallet
 import transaction
 import wallet
