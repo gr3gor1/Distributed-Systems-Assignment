@@ -53,21 +53,27 @@ class Transaction:
 
 
     def to_dict(self):
-        return OrderedDict({'sender_address': self.sender_address,
-                           'receiver_address': self.receiver_address,
-                           'value': self.value,
-                           'transaction_id':self.transaction_id,
-                           'transaction_inputs':self.transaction_inputs,
-                           'transaction_outputs':self.transaction_outputs,
-                           'Signature':self.Signature})
+        transaction_dict = OrderedDict()
+        transaction_dict['sender_address'] = self.sender_address
+        transaction_dict['recipient_address'] = self.receiver_address
+        transaction_dict['value'] = self.value
+        transaction_dict['transaction_id'] = self.transaction_id
+        transaction_dict['transaction_inputs'] = self.transaction_inputs
+        transaction_dict['transaction_outputs'] = self.transaction_outputs
+        transaction_dict['signature'] = self.Signature
+        return transaction_dict
+        
     
     def to_dict2(self):
-        return OrderedDict({'sender_address': self.sender_address,
-                           'receiver_address': self.receiver_address,
-                           'value': self.value,
-                           'transaction_id':self.transaction_id,
-                           'transaction_inputs':self.transaction_inputs,
-                           'transaction_outputs':self.transaction_outputs})
+        transaction_dict = OrderedDict()
+        transaction_dict['sender_address'] = self.sender_address
+        transaction_dict['recipient_address'] = self.receiver_address
+        transaction_dict['value'] = self.value
+        transaction_dict['transaction_id'] = self.transaction_id
+        transaction_dict['transaction_inputs'] = self.transaction_inputs
+        transaction_dict['transaction_outputs'] = self.transaction_outputs
+        return transaction_dict
+        
         
 
     def sign_transaction(self,sender_private_key):
