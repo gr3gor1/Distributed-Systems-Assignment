@@ -1,5 +1,5 @@
 import requests
-
+import json
 from blockchain import Blockchain
 from wallet import Wallet
 from block import Block
@@ -86,14 +86,39 @@ class node:
 			return True
 	
 	def broadcast_transaction(self,transaction):
-
-	#def validate_transaction():
+		n=len(self.ring)
+		for node in self.ring:
+			url = f"http://{node['ip']}:{node['port']}/transactions/broadcast"
+			headers = {'Content-type': 'application/json'}
+			data = {'transaction': transaction.to_dict()}
+			try:
+				response = requests.post(url, headers=headers, data=json.dumps(data))
+				n = n-1
+				if (n == 0):
+					self.add_transaction_to_block(transaction)
+				if response.status_code != 200:
+					print(f"Error broadcasting transaction to node {node['id']}: {response.text}")
+			except requests.exceptions.RequestException as e:
+				print(f"Error broadcasting transaction to node {node['id']}: {e}")
+				return False
+	
+	def validate_transaction(self,transaction):
 		#use of signature and NBCs balance
+		if (transaction.verify_signature() == False):
+			return False
+		
+		for peer in self.ring:
+			if peer['pub'] == transaction.sender_address:
+				if peer['balance'] >= transaction.amount:
+					return True
+		return False
 
 	#def add_transaction_to_block():
 		#if enough transactions  mine
 
-	#def mine_block():
+	def mine_block(self,block):
+		block.nonce = 0
+		block.previous_hash = self.blockchain.chain[-1].hash
 
 	#def broadcast_block():
 
