@@ -13,3 +13,6 @@ class Blockchain:
         genesis_block.list_of_transactions = []  
         genesis_block.hash = genesis_block.myHash()
         self.chain.append(genesis_block)
+
+    def stringify_chain(self):
+        return str(self.__dict__)
