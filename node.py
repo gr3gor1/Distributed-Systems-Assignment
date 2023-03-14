@@ -1,5 +1,9 @@
 import requests
 import json
+from threading import Thread, Lock
+from copy import deepcopy
+
+
 from blockchain import Blockchain
 from wallet import Wallet
 from block import Block
@@ -14,12 +18,18 @@ class node:
 	def __init__(self):
 		self.id = None
 		self.blockchain = Blockchain()
-		self.capacity = None
 		self.id = None
 		self.NBCs = 0;
 		self.wallet = Wallet()
 		self.active_block = None
+		self.mining_flag = False 
 		self.ring = []   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
+		self.to_check = [] #blocks that need to be checked
+
+		#locks we will need to make sure certain data are manipulated simultaneously
+		self.lock_block = Lock()
+		self.lock_chain = Lock()
+		self.lock_temp = Lock()
 	
 	def create_new_block(self):
 		#if blockchain is empty then we create genesis block
@@ -86,21 +96,39 @@ class node:
 			return True
 	
 	def broadcast_transaction(self,transaction):
-		n=len(self.ring)
-		for node in self.ring:
-			url = f"http://{node['ip']}:{node['port']}/transactions/broadcast"
-			headers = {'Content-type': 'application/json'}
-			data = {'transaction': transaction.to_dict()}
-			try:
-				response = requests.post(url, headers=headers, data=json.dumps(data))
-				n = n-1
-				if (n == 0):
-					self.add_transaction_to_block(transaction)
-				if response.status_code != 200:
-					print(f"Error broadcasting transaction to node {node['id']}: {response.text}")
-			except requests.exceptions.RequestException as e:
-				print(f"Error broadcasting transaction to node {node['id']}: {e}")
+	#we will create a function and then we will create N threads
+	#and then we will hit the same endpoint on each node in the network
+	#at first we seek validation of th transaction
+		def dummy(peer,res,endpoint):
+			if peer['id'] != self.id:
+				address = "http://" + peer['ip'] + ":" + peer['port']
+				response = requests.post(address + endpoint,data=json.dumps(transaction.stringify()))
+				res.append(response.status_code)
+
+		to_close = []
+		ans = []
+
+		for peer in self.ring:
+			thread = Thread(target=dummy, args=(peer,ans,'/broadcast_transaction'))
+			to_close.append(thread)
+			thread.start()
+
+		for i in range(len(ans)):
+			to_close[i].join()
+			if ans[i] != 200:
 				return False
+			
+		#secondly after validation we need to add it in the block	
+		to_close = []
+		ans = []
+
+		for peer in self.ring:
+			thread = Thread(target=dummy, args=(peer,ans,"/add_transaction"))
+			to_close.append(thread)
+			thread.start()
+
+		self.add_transaction_to_block(transaction)
+		return True
 	
 	def validate_transaction(self,transaction):
 		#use of signature and NBCs balance
@@ -113,16 +141,94 @@ class node:
 					return True
 		return False
 
-	#def add_transaction_to_block():
+	def add_transaction_to_block(self,transaction):
 		#if enough transactions  mine
+		if (transaction.receiver_address == self.wallet.public_key_hex):
+			self.wallet.transactions.append(transaction)
+		if (transaction.sender_address == self.wallet.private_key_hex):
+			self.wallet.transactions.append(transaction)
+
+		for peer in self.ring:
+			if peer['pub'] == transaction.sender_address:
+				peer['balance'] -= transaction.amount
+			if peer['pub'] == transaction.receiver_address:
+				peer['balance'] += transaction.amount
+
+		if self.active_block == None:
+			self.active_block = self.create_new_block()
+
+		self.lock_block.acquire()
+		if self.active_block.add_transaction(transaction,CAPACITY):
+			self.to_check.append(deepcopy(self.active_block))
+			self.active_block = self.create_new_block()
+			self.lock_block.release()
+			while True:
+				with self.lock_temp:
+					if(self.to_check):
+						mine = self.to_check[0]
+						fin = self.mine_block(mine)
+						if (fin):
+							break
+						else:
+							self.to_check.insert(0,mine)
+					else:
+						return
+			self.broadcast_block(mine)
+		else:
+			self.lock_block.release()	
 
 	def mine_block(self,block):
 		block.nonce = 0
+		block.index = self.blockchain.chain[-1].index + 1
 		block.previous_hash = self.blockchain.chain[-1].hash
+		current_hash = block.myHash()
+		while(current_hash.startsWith('0'*DIFFICULTY) == False & self.mining_flag==False):
+			block.nonce +=1
+			current_hash = block.myHash()
+		block.hash = current_hash
 
-	#def broadcast_block():
+		return not self.mining_flag
 
-	#def valid_proof(.., difficulty=MINING_DIFFICULTY):
+	def broadcast_block(self,block):
+		#if the new block we just mined is recognised from at least one
+		#node then add it in the chain
+
+		def dummy(peer,res):
+			address = 'http://' + peer['ip'] + ":" + peer['port']
+			response = requests.post(address + '/broadcast_block',data=json.dumps(block))
+			res.append(response.status_code)
+
+		to_close = []
+		ans = []
+
+		for peer in self.ring:
+			thread = Thread(target= dummy, args =(peer,ans))
+			to_close.append(thread)
+			thread.start()
+
+		accepted = False
+
+		for i in range(len(to_close)):
+			to_close[i].join()
+			if ans[i] == 200:
+				accepted = True
+
+		if (accepted == True):
+			with self.lock_chain:
+				if self.validate_block(block):
+					self.blockchain.chain.append(block)
+
+	def validate_block(self,block):
+		condition1 = False
+		condition2 = False
+		
+		if (block.previousHash == self.blockchain.chain[-1].hash):
+			condition1 = True 
+
+		if (block.hash == block.myHash()):
+			condition2 = True
+
+		return (condition1 & condition2)
 
 	#concencus functions
 

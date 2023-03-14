@@ -7,7 +7,7 @@ class Block:
 		self.index = index
 		self.previousHash = previousHash
 		self.timestamp = time.time()
-		self.hash = self.myHash()
+		self.hash = None
 		self.nonce=None
 		self.listOfTransactions=[]
 	
@@ -22,8 +22,8 @@ class Block:
 		#add a transaction to the block but we need to know whether it is full or not
 		self.listOfTransactions.append(transaction)
 		if len(self.listOfTransactions) == capacity:
-			return ("full")
-		return ("ok")
+			return True
+		return False
 		
 	def check_equality(self,other):
 		#check whether two blocks are equal
