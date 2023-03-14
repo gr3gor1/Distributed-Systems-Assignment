@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 
-class wallet:
+class Wallet:
 
 	def __init__(self):
 		random = Crypto.Random.new().read()
@@ -23,13 +23,12 @@ class wallet:
 		self.public_key = self.private_key.publickey()
 		#hex public key
 		self.public_key_hex = hashlib.sha256(self.public_key.exportKey(format='DER')).hexdigest()
+		self.private_key_hex = hashlib.sha256(self.private_key.exportKey(format='DER')).hexdigest()
 		#wallet address is equal to the SHA256 hash of the public key in hexadecimal format
 		self.address = self.public_key_hex
 		#transaction of the wallet
 		self.transactions = []
 
-		def add_transaction(self,transaction):
-			self.transactions.append(transaction)
 
 		def balance(self):
 			#sum of the UTXOs according to the assignment

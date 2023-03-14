@@ -12,15 +12,15 @@ from Crypto.Signature import PKCS1_v1_5
 
 class Transaction:
 
-    def __init__(self, sender_address, sender_id,sender_private_key, recipient_address, recipient_id,value,transactionIn,transactionId=None,transactionOut = None,signature = None):
+    def __init__(self, sender_address, sender_id, recipient_address, recipient_id,value,NBCs,transactionIn,transactionId=None,transactionOut = None,signature = None):
         #self.sender_address: To public key του wallet από το οποίο προέρχονται τα χρήματα
         self.sender_address = sender_address
         #self.receiver_address: To public key του wallet στο οποίο θα καταλήξουν τα χρήματα
         self.receiver_address = recipient_address
-        #self.amount: το ποσό που θα μεταφερθεί
+        #self.amount: το ποσό της συναλλαγής
         self.amount = value
         #self.transaction_id: το hash του transaction (hexadecimal format)
-        if (self.transaction_id == None):
+        if (self.transaction_id):
             self.transaction_id = transactionId
         else:
             self.transaction_id = SHA.new((str(sender_address)+str(recipient_address)+str(value)).encode()).hexdigest()
@@ -32,17 +32,17 @@ class Transaction:
         else:
             self.transaction_outputs = transactionOut
         #self.signature
-        self.signature = self.sign_transaction()
-        #self.private_key
-        self.private_key = sender_private_key
+        self.signature = signature
         #sender id
         self.sender = sender_id
         #receiver id
         self.receiver = recipient_id
+        #NBCs
+        self.NBCs = NBCs
 
-    def sign_transaction(self):
+    def sign_transaction(self,private_key):
         #Sign transaction with private key
-        sender = PKCS1_v1_5.new(RSA.importKey(binascii.unhexlify(self.private_key)))
+        sender = PKCS1_v1_5.new(RSA.importKey(binascii.unhexlify(private_key)))
         hash = SHA.new(str(self.__dict__).encode('utf8'))
         self.signature = binascii.hexlify(sender.sign(hash)).decode('ascii')
 
@@ -52,15 +52,19 @@ class Transaction:
         message_hash = SHA.new(self.transaction_id.encode('utf-8'))
         verifier = PKCS1_v1_5.new(key)
         try:
-            signature = binascii.unhexlify(self.sender_address.encode('utf-8'))
-            is_valid = verifier.verify(message_hash, signature)
+            verifier.verify(message_hash, self.signature)
             return True
         except (ValueError, TypeError):
             return False
 
     def create_out(self):
-        out = transactionOut.TransactionOutput(self.transaction_id,self.receiver_address,self.amount)
-        self.transaction_outputs = [out]
+        rec_out = transactionOut.TransactionOutput(self.transaction_id,self.receiver_address,self.amount)
+        self.transaction_outputs = [rec_out]
+
+        #check for change
+        if self.NBCs > self.amount:
+            send_out = transactionOut.TransactionOutput(self.transaction_id,self.receiver_address,self.NBCs-self.amount)
+            self.transaction_outputs.append(send_out)
 
         
 
