@@ -11,18 +11,19 @@ from hashlib import sha256
 
 import requests
 from flask import Flask, jsonify, request, render_template
+import base64
 
 
 class Transaction:
 
-    def __init__(self, sender_address, sender_private_key, recipient_address, value):
+    def __init__(self, sender_address, sender_private_key, recipient_address, value, transaction_inputs, transaction_outputs):
 
-        self.sender_address = sender_address                                                                                                        #To public key του wallet από το οποίο προέρχονται τα χρήματα
-        self.receiver_address = recipient_address                                                                                               #To public key του wallet στο οποίο θα καταλήξουν τα χρήματα
-        self.amount = value                                                                                                                         #το ποσό που θα μεταφερθεί
-        self.transaction_id = sha256((str(self.sender_address) + str(self.receiver_address) + str(self.amount) + str(datetime.now())).encode())     #το hash του transaction
-        self.transaction_inputs =                                                                                                                   #λίστα από Transaction Input 
-        self.transaction_outputs =                                                                                                                  #λίστα από Transaction Output 
+        self.sender_address = sender_address                                                                                                                    #To public key του wallet από το οποίο προέρχονται τα χρήματα
+        self.receiver_address = recipient_address                                                                                                               #To public key του wallet στο οποίο θα καταλήξουν τα χρήματα
+        self.amount = value                                                                                                                                     #το ποσό που θα μεταφερθεί
+        self.transaction_id = sha256((str(self.sender_address) + str(self.receiver_address) + str(self.amount) + str(datetime.now())).encode()).hexdigest()     #το hash του transaction
+        self.transaction_inputs = transaction_inputs                                                                                                            #λίστα από Transaction Input 
+        self.transaction_outputs = transaction_outputs                                                                                                          #λίστα από Transaction Output
         self.signature = self.sign_transaction(sender_private_key)
 
     def to_dict(self):
@@ -38,7 +39,17 @@ class Transaction:
         
 
     def sign_transaction(self, sender_private_key):
-        """
-        Sign transaction with private key
-        """
-        return PKCS1_v1_5.new(sender_private_key).sign(self.transaction_id)
+        #Sign transaction with private key
+        private_key = RSA.importKey(sender_private_key)
+        signer = PKCS1_v1_5.new(private_key)
+        hash_obj = self.to_dict2()
+        hash_obj = SHA.new(str(hash_obj).encode('utf8'))
+        return base64.b64encode(signer.sign(hash_obj)).decode()
+
+    def verify_signature(self, public_key):
+        # Load public key and verify message
+        hash_obj = self.to_dict2()
+        hash_obj = SHA.new(str(hash_obj).encode())
+        public_key = RSA.importKey(public_key)
+        verifier = PKCS1_v1_5.new(public_key)
+        return verifier.verify(hash_obj, base64.b64decode(self.Signature))

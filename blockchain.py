@@ -1,14 +1,13 @@
 from block import Block
+from transaction import Transaction
 
 class Blockchain:
     def __init__(self):
         self.chain = []
-        self.unconfirmed_transactions = []
         self.genesis_block()
 
     def genesis_block(self):
-        genesis_block = Block("0", [])
-        genesis_block.generate_hash()
+        genesis_block = Block(0, "1", [])
         self.chain.append(genesis_block)
 
     def add_block(self, block):

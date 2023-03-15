@@ -7,22 +7,18 @@ CAPACITY = 2
 MINING_DIFFICULTY = 2
 
 class node:
-	def __init__(self, ip, port, chain, current_id_count):
+	def __init__(self, id, bootstrap, ip, port, chain):
 		
+		self.id = id
+		self.bootstrap = bootstrap
 		self.ip = ip
 		self.port = port 
 		self.chain = chain
-		self.current_id_count = current_id_count
-		self.NBCs = 100
-		self.wallet = self.create_wallet()
+		self.wallet = wallet()
 		self.ring = []   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 
 	def create_new_block(self):
 		return Block(previous_hash = self.chain[-1].hash, transactions = [])
-
-	def create_wallet(self):
-		#create a wallet for this node, with a public key and a private key
-		return wallet()
 
 	def register_node_to_ring(self, node):
 		#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
@@ -30,14 +26,15 @@ class node:
 		self.ring.append([node.current_id_count, node.ip, node.port, node.wallet.public_key, node.wallet.balance])
 
 
-	def create_transaction(sender, receiver, signature):
+	def create_transaction(self, sender, receiver, signature):
 		#remember to broadcast it
 
 
 	def broadcast_transaction(self, transaction):
 		for node in self.ring:
+			address = str(node[1]) + ':' + str(node[2])
 			try:
-				node.send(transaction)
+				address.send(transaction)
 			except requests.ConnectionError:
 				print("Connection Error")
 				pass
@@ -60,9 +57,10 @@ class node:
 		return new_block, proof 
 
 	def broadcast_block(self, block):
+		address = str(node[1]) + ':' + str(node[2])
 		for node in self.ring:
 			try:
-				node.send(block)
+				address.send(block)
 			except requests.ConnectionError:
 				print("Connection Error")
 				pass
@@ -73,10 +71,10 @@ class node:
 
 
 	def proof_of_work(self, block, difficulty=MINING_DIFFICULTY):
-		proof = block.generate_hash()
+		proof = block.myHash()
 		while proof[:difficulty] != "0"*difficulty:
 			block.nonce += 1
-			proof = block.generate_hash()
+			proof = block.myHash()
 			block.nonce = 0
 		return proof
 
@@ -84,10 +82,10 @@ class node:
 		for i in range(1, len(self.chain)):
 			current = self.chain[i]
 			previous = self.chain[i-1]
-			if(current.hash != current.generate_hash()):
+			if(current.hash != current.myHash()):
 				print("Current hash does not equal generated hash")
 				return False
-			if(current.previous_hash != previous.generate_hash()):
+			if(current.previous_hash != previous.myHash()):
 				print("Previous block's hash got changed")
 				self.resolve_conflicts()
 

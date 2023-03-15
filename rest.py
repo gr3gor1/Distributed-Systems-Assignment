@@ -3,12 +3,11 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 
 
-import block
-import node
+from block import Block
+#from node import node
 from blockchain import Blockchain
-import wallet
-import transaction
-import wallet
+#from wallet import wallet
+#from transaction import Transaction
 
 
 ### JUST A BASIC EXAMPLE OF A REST API WITH FLASK
@@ -22,7 +21,25 @@ blockchain = Blockchain()
 
 #.......................................................................................
 
+@app.route('/', methods=['GET'])
 
+def welcome():
+    wl = '''
+        <html>
+        <head><title>Spyder</title></head>
+        <body>
+        <h1>Blockchain</h1>
+        Welcome to our Blockchain Page
+        <br>
+            <ul>
+            <li>For Mining Blocks Visit : <a href="http://127.0.0.1:5000/mineblock">http://127.0.0.1:5000/mineblock</a></li>
+            <li>For Viewing the Blockchain Visit : <a href="http://127.0.0.1:5000/getchain">http://127.0.0.1:5000/getchain</a></li>
+            <li>For Validating Blockchain Visit : <a href="http://127.0.0.1:5000/validate">http://127.0.0.1:5000/validate</a></li>
+            </ul>
+        </body>
+        </html>
+        '''
+    return wl
 
 # get all transactions in the blockchain
 
