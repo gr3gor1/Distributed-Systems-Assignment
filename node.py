@@ -2,6 +2,7 @@ import requests
 import json
 from threading import Thread, Lock
 from copy import deepcopy
+import itertools
 
 
 from blockchain import Blockchain
@@ -229,15 +230,119 @@ class node:
 			condition2 = True
 
 		return (condition1 & condition2)
-
+			
 	#concencus functions
 
-	#def valid_chain(self, chain):
-		#check for the longer chain accroose all nodes
+	def valid_chain(self, chain):
+		#check if the chain we received is valid after a conflict
+		chainOfBlocks = chain.chain
+		condition1 = False
+		condition2 = False
+
+		for index in range(len(chainOfBlocks)):
+			if index == 0 :
+				if(chainOfBlocks[index].hash != 1 or chainOfBlocks[index].hash != chainOfBlocks[index].myHash()):
+					return False
+				else:
+					if(chainOfBlocks[index].hash == chainOfBlocks[index].myHash()):
+						condition1 = True
+					if(chainOfBlocks[index].previousHash == chainOfBlocks[index-1].hash):
+						condition2 = True
+
+					if (condition1==False) or (condition2==False):
+						return False
+		return True
+	
+	def resolve_conflicts(self,block):
+		#after broadcast to concentrate all the chains we validate the incoming chains and then decide to stick with the longest one
+		def dummy(peer,blockchains):
+			address = "http://" + peer['ip'] + ':' + peer['port']
+			response = requests.get(address + '/broadcast_chain')
+			blockchain = json.dumps(response._content)
+			blockchains.append(blockchain)
+
+		threads = []
+		blockchains = []
+
+		for peer in self.ring:
+			thread = Thread(target=dummy,args=(peer,blockchains))
+			threads.append(thread)
+			thread.start()
+
+		for thread in threads:
+			thread.join()
+
+		winner = None
+		for chain in blockchains:
+			if winner:
+				blockchain_length = len(chain.chain)
+				winner_length = len(winner.chain)
+				self_length = len(self.blockchain.chain)
+				if (self.valid_chain(chain) & (blockchain_length>winner_length)):
+					winner = chain
+			else:
+				if (self.valid_chain(chain) & (blockchain_length>self_length)):
+					winner = chain
+
+		if winner:
+			self.mining_flag = True
+			with self.lock_temp:
+				index = len(winner.chain) - 1
+				while(index>0 & ((winner.chain[index].hash != self.blockchain.chain[-1].hash))):
+					index = index - 1
+
+				for item in self.blockchain.chain[index+1:].reverse():
+					self.to_check.insert(0,item)
+
+				for item in winner.chain[index+1:]:
+					self.check_doubles(item)
 
 
-	#def resolve_conflicts(self):
-		#resolve correct chain
+				self.blockchain.chain = winner.chain
+				self.mining_flag = False
+		return self.validate_block(block)
+
+	def check_doubles(self,block):
+		#check for double transactions between added block and blocks you still havent check
+		with self.lock_block:
+			#flatten list of transactions in unchecked blocks
+			transactions = list(itertools.chain.from_iterable([ublock.tr for ublock in self.to_check]))
+
+			if (self.active_block):
+				transactions.extend(self.active_block.listOfTransactions)
+
+			self.active_block.listOfTransactions = []
+
+			filter_tr = []
+
+			for tr in transactions:
+				if(tr not in block.listOfTransactions):
+					filter_tr.append(tr)
+
+			if not self.to_check:
+				self.active_block.listOfTransactions = deepcopy(filter_tr)
+				return
+			
+			index = 0
+
+			while ((index + 1) * CAPACITY<= len(filter_tr)):
+				self.to_check[index].listOfTransactions = deepcopy(filter_tr[(index * CAPACITY):((index + 1) * CAPACITY)])
+				index = index + 1
+
+			if (index * CAPACITY) < len(filter_tr):
+				self.active_block.listOfTransactions = deepcopy(filter_tr[(index * CAPACITY):])
+
+			for item in range(len(self.to_check)-index):
+				self.to_check.pop()
+		return
+
+	def announce_ring(self,node):
+		address = 'http://' + node['ip'] + ':' + node['port']
+		requests.post(address + '/share_ring', data = json.dumps(self.ring))
+
+	def announce_chain(self,node):
+		address = 'http://' + node['ip'] + ':' + node['port']
+		requests.post(address + '/share_chain',data = json.dumps(self.blockchain.chain))
 
 
 
