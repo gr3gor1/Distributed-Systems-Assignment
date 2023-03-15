@@ -1,17 +1,16 @@
-from datetime import datetime
+import time
 from hashlib import sha256
 import json
 
-MINING_DIFFICULTY=2
+MINING_DIFFICULTY=1
 
 class Block:
-	def __init__(self,index,transactions,previous_hash, nonce=0):
+	def __init__(self,index,transactions,previous_hash, nonce=0,timestamp=time.time()):
 		self.index=index
 		self.previous_hash = previous_hash
-		self.timestamp = datetime.now()
+		self.timestamp = timestamp
 		self.nonce = nonce
 		self.listOftransactions = transactions
-		self.hash = self.myHash()
 		self.cur_hash = -1
 	
 	def myHash(self):
@@ -39,11 +38,13 @@ class Block:
 		return guess_hash[:difficulty] == '0'*difficulty
 
 	def print_contents(self):
-		print("index", self.index)
-		print("timestamp",self.timestamp)
-		print("transactions:", self.listOftransactions)
-		print("current hash:", self.hash)
-		print("previous hash:", self.previous_hash)
+		content={
+		"index": self.index,
+		"timestamp":self.timestamp,
+		"transactions:": self.listOftransactions,
+		"cur_hash:": self.cur_hash,
+		"previous_hash:": self.previous_hash}
+		return content
   
   	
 	def block_to_json(self):

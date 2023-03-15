@@ -1,24 +1,32 @@
 from block import Block
 from wallet import wallet
+from blockchain import Blockchain
 from transaction import Transaction
 import requests
+import threading
+
+no_mine = threading.Event()
+no_mine.set()
+
+
 
 CAPACITY = 2
 MINING_DIFFICULTY = 2
 
 class node:
-	def __init__(self, ip, port, chain, current_id_count):
+	def __init__(self, ip, port, current_id_count):
 		
 		self.ip = ip
-		self.port = port 
-		self.chain = chain
+		self.port = port
+		self.chain = Blockchain()
+		self.wallet = wallet()
 		self.current_id_count = current_id_count
 		self.NBCs = 100
 		self.wallet = self.create_wallet()
 		self.ring = []   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 
 	def create_new_block(self):
-		return Block(len(self.chain),transactions = [],previous_hash = self.chain[-1].hash)
+		return Block(len(self.chain),transactions = [],previous_hash = self.chain[-1].cur)
 
 	def create_wallet(self):
 		#create a wallet for this node, with a public key and a private key
@@ -35,12 +43,6 @@ class node:
 
 
 	def broadcast_transaction(self, transaction):
-		for node in self.ring:
-			try:
-				node.send(transaction)
-			except requests.ConnectionError:
-				print("Connection Error")
-				pass
 
 	def validate_transaction(self, transaction):
 		#use of signature and NBCs balance

@@ -41,4 +41,11 @@ t.sign_transaction(privkey)
 print(t.verify_signature(pubkey))
 '''
 chain=Blockchain()
-chain.print_blocks()
+chain.genesis_block(1)
+#chain.print_blocks()
+t=Transaction(0,123,10,100)
+chain.add_transaction(t)
+#chain.print_blocks()
+'''t2=Transaction(0,123,10,100)
+chain.add_transaction(t2)
+chain.print_blocks()'''

@@ -2,8 +2,9 @@ from block import Block
 from transaction import Transaction
 from wallet import wallet
 import threading
+import time
+import node
 
-MINING_DIFFICULTY=2
 CAPACITY=1
 
 class Blockchain:
@@ -11,7 +12,8 @@ class Blockchain:
         self.chain = []
         self.list_transactions = []
         self.mine = threading.Event()
-        self.genesis_block(1)
+        self.ring=node.ring
+        self.id=node.id
 
     def genesis_block(self,participants):
         money = 100 * (participants + 1)
@@ -19,7 +21,9 @@ class Blockchain:
         genesis_block = Block(len(self.chain),[],'0')
         trans = Transaction('0', address.address, money, [])
         genesis_block.add_transaction(trans.to_dict())
+        genesis_block.cur_hash = genesis_block.myHash()
         self.chain.append(genesis_block)
+        return print("genesis created")
 
     def print_blocks(self):
         for i in range(len(self.chain)):
@@ -30,9 +34,10 @@ class Blockchain:
     
     
     def add_transaction(self,transaction):
+        print("new transaction in the block")
         self.list_transactions.append(transaction.to_dict())
         if(len(self.list_transactions)==CAPACITY):
-            previous_hash = (self.chain[-1]).hash
+            previous_hash = self.chain[-1].cur_hash
             new_block = Block(len(self.chain),self.list_transactions,previous_hash)
             self.list_transactions = []
             self.mine.clear()
@@ -42,7 +47,24 @@ class Blockchain:
             
     def lets_mine(self,block):
         print("start mining")
+        strart_mine_time = time.time()
         block.mine_block(self.mine)
+        if (not self.mine.isSet()):
+            self.chain.append(block)
+            print('Mined block')
+            message = {
+                        'last_block': self.chain[-1].print_contents() # to JSON
+                    }
+            print(message)
+    
+    
+    
+    def output (self):
+        outlist = []
+        for bl in self.chain:
+            outlist.append(bl.print_contents())
+        return outlist
+            
             
             
 '''
