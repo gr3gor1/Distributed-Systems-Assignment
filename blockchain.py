@@ -3,7 +3,7 @@ from transaction import Transaction
 from wallet import wallet
 import threading
 import time
-import node
+##import node
 
 CAPACITY=1
 
@@ -12,8 +12,8 @@ class Blockchain:
         self.chain = []
         self.list_transactions = []
         self.mine = threading.Event()
-        self.ring=node.ring
-        self.id=node.id
+        #self.ring=node.ring
+        #self.id=node.id
 
     def genesis_block(self,participants):
         money = 100 * (participants + 1)
@@ -29,12 +29,12 @@ class Blockchain:
         for i in range(len(self.chain)):
             current_block = self.chain[i]
             print("Block {} {}".format(i, current_block))
-            current_block.print_contents()
+            current_block.print_cont()
         return
     
     
     def add_transaction(self,transaction):
-        print("new transaction in the block")
+        print("new transaction")
         self.list_transactions.append(transaction.to_dict())
         if(len(self.list_transactions)==CAPACITY):
             previous_hash = self.chain[-1].cur_hash

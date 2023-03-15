@@ -46,6 +46,12 @@ class Block:
 		"previous_hash:": self.previous_hash}
 		return content
   
+	def print_cont(self):
+		print("index", self.index)
+		print("timestamp",self.timestamp)
+		print("transactions:", self.listOftransactions)
+		print("current hash:", self.hash)
+		print("previous hash:", self.previous_hash)
   	
 	def block_to_json(self):
 		result = json.dumps(dict(

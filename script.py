@@ -46,6 +46,6 @@ chain.genesis_block(1)
 t=Transaction(0,123,10,100)
 chain.add_transaction(t)
 #chain.print_blocks()
-'''t2=Transaction(0,123,10,100)
+t2=Transaction(0,123,10,100)
 chain.add_transaction(t2)
-chain.print_blocks()'''
+chain.print_blocks()
