@@ -15,7 +15,7 @@ from transactionIn import TransactionInput
 CAPACITY = 4
 DIFFICULTY = 2
 
-class node:
+class Node:
 	def __init__(self):
 		self.id = None
 		self.blockchain = Blockchain()
@@ -254,7 +254,7 @@ class node:
 		return True
 	
 	def resolve_conflicts(self,block):
-		#after broadcast to concentrate all the chains we validate the incoming chains and then decide to stick with the longest one
+		#after broadcasts to concentrate all the chains we validate the incoming chains and then decide to stick with the longest one
 		def dummy(peer,blockchains):
 			address = "http://" + peer['ip'] + ':' + peer['port']
 			response = requests.get(address + '/broadcast_chain')
