@@ -18,6 +18,24 @@ class node:
 		self.chain = chain
 		self.wallet = wallet()
 		self.ring = []   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
+		if self.bootstrap == False:
+			self.share_node_info()
+
+
+	def share_node_info(self):
+		data = {'id': self.id, 
+				'ip': self.ip, 
+				'port': self.port, 
+				'public_key': self.wallet.public_key,
+				'balance': self.wallet.balance()}
+		
+		address = 'https://127.0.0.1:5000/get_ring_info'
+		response = requests.post(address, data=json.dumps(data))
+		print(response.json())
+
+
+		
+
 
 #--------------------------------------NEW BLOCKS/TRANSACTIONS----------------------------------------
 
@@ -67,7 +85,11 @@ class node:
 		#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
 		#bootstrap node informs all other nodes and gives the request node an id and 100 NBCs
 		if self.bootstrap:
-			self.ring.append([node.id, node.ip, node.port, node.wallet.public_key, node.wallet.balance()])
+			self.ring.append({'id': node.id, 
+							  'ip': node.ip, 
+							  'port': node.port, 
+							  'public_key': node.wallet.public_key,
+							  'balance': node.wallet.balance()})
 			return True
 		else:
 			return False
@@ -84,7 +106,7 @@ class node:
 
 	def broadcast_transaction(self, transaction, endpoint = '/broadcast/transaction'):
 		for node in self.ring:
-			address = 'https://' + str(node[1]) + ':' + str(node[2])
+			address = 'https://' + str(node['ip']) + ':' + str('port')
 			if node[id] != node.id:
 				response = requests.post(address + endpoint, data=json.dumps(transaction))
 				if response.status_code != 200:
@@ -93,7 +115,7 @@ class node:
 	
 	def broadcast_block(self, block, endpoint = '/broadcast/block'):
 		for node in self.ring:
-			address = 'https://' + str(node[1]) + ':' + str(node[2])
+			address = 'https://' + str(node['ip']) + ':' + str(node['port'])
 			if node[id] != node.id:
 				response = requests.post(address + endpoint, data=json.dumps(block))
 				if response.status_code != 200:
@@ -103,7 +125,7 @@ class node:
 
 	def broadcast_ring(self, endpoint = '/broadcast/ring'):
 		for node in self.ring:
-			address = 'https://' + str(node[1]) + ':' + str(node[2])
+			address = 'https://' + str(node.ring['ip']) + ':' + str(node['port'])
 			if node[id] != node.id:
 				response = requests.post(address + endpoint, data=json.dumps(self.ring))
 				if response.status_code != 200:
@@ -112,7 +134,7 @@ class node:
 	
 	def broadcast_chain(self, endpoint = '/broadcast/chain'):
 		for node in self.ring:
-			address = 'https://' + str(node[1]) + ':' + str(node[2])
+			address = 'https://' + str(node['ip']) + ':' + str(node['port'])
 			if node[id] != node.id:
 				response = requests.post(address + endpoint, data=json.dumps(self.chain))
 				if response.status_code != 200:
@@ -183,3 +205,11 @@ class node:
 				if response.status_code != 200:
 					return False
 		return True
+
+#--------------------------------------VIEWS-----------------------------------------------------
+
+	def view_transactions(self):
+		return self.chain[-1].transactions
+
+	def view_balance(self):
+		return self.wallet.balance()
