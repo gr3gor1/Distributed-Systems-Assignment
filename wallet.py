@@ -36,3 +36,6 @@ class wallet:
 		
 		return amount
 	
+	def add_transaction(self, transaction):
+		#add a transaction to the block
+		self.transactions.append(transaction)

@@ -20,6 +20,8 @@ from transaction import Transaction
 
 from blockchain import Blockchain
 
+from node import node
+
 '''
 
 t = Transaction(9,10,100,234)
@@ -40,6 +42,7 @@ pubkey = pub.exportKey(format='DER')
 t.sign_transaction(privkey)
 print(t.verify_signature(pubkey))
 '''
+'''
 chain=Blockchain()
 chain.genesis_block(1)
 #chain.print_blocks()
@@ -48,4 +51,7 @@ chain.add_transaction(t)
 #chain.print_blocks()
 t2=Transaction(0,123,10,100)
 chain.add_transaction(t2)
-chain.print_blocks()
+chain.print_blocks()'''
+
+start=node(0,0,0,"yes",1)
+start.register_node_to_ring()

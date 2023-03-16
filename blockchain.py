@@ -1,32 +1,35 @@
 from block import Block
 from transaction import Transaction
-from wallet import wallet
 import threading
 import time
-##import node
+import copy
 
 CAPACITY=1
 
 class Blockchain:
     def __init__(self):
-        self.chain = []
+        self.list_blocks = []
         self.list_transactions = []
         self.mine = threading.Event()
-        #self.ring=node.ring
-        #self.id=node.id
 
-    def genesis_block(self,participants):
+
+    def get_addresses(self, addresses): # ring, node_id is node.id
+        #print("aaaaaaaaaaaaaaaaaaaaaaaaa")
+        self.ring = copy.deepcopy(addresses)
+        return
+    
+    def genesis_block(self,participants,address):
         money = 100 * (participants + 1)
-        address=wallet()
-        genesis_block = Block(len(self.chain),[],'0')
-        trans = Transaction('0', address.address, money, [])
+        genesis_block = Block(len(self.list_blocks),[],'0')
+        trans = Transaction('0', address, money, [])
         genesis_block.add_transaction(trans.to_dict())
         genesis_block.cur_hash = genesis_block.myHash()
-        self.chain.append(genesis_block)
-        return print("genesis created")
+        self.list_blocks.append(genesis_block)
+        print("genesis created")
+        return
 
     def print_blocks(self):
-        for i in range(len(self.chain)):
+        for i in range(len(self.list_blocks)):
             current_block = self.chain[i]
             print("Block {} {}".format(i, current_block))
             current_block.print_cont()
@@ -38,7 +41,7 @@ class Blockchain:
         self.list_transactions.append(transaction.to_dict())
         if(len(self.list_transactions)==CAPACITY):
             previous_hash = self.chain[-1].cur_hash
-            new_block = Block(len(self.chain),self.list_transactions,previous_hash)
+            new_block = Block(len(self.list_blocks),self.list_transactions,previous_hash)
             self.list_transactions = []
             self.mine.clear()
             miner = threading.Thread(name = 'miner', target = self.lets_mine, args = (new_block, ))
@@ -50,10 +53,10 @@ class Blockchain:
         strart_mine_time = time.time()
         block.mine_block(self.mine)
         if (not self.mine.isSet()):
-            self.chain.append(block)
+            self.list_blocks.append(block)
             print('Mined block')
             message = {
-                        'last_block': self.chain[-1].print_contents() # to JSON
+                        'last_block': self.list_blocks[-1].print_contents() # to JSON
                     }
             print(message)
     
@@ -61,7 +64,7 @@ class Blockchain:
     
     def output (self):
         outlist = []
-        for bl in self.chain:
+        for bl in self.list_blocks:
             outlist.append(bl.print_contents())
         return outlist
             
