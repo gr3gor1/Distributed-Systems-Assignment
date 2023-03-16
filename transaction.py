@@ -15,14 +15,14 @@ import base64
 
 class Transaction:
 
-    def __init__(self, sender_address, sender_private_key, recipient_address, value, transaction_inputs, transaction_outputs):
+    def __init__(self, sender_address, sender_private_key, recipient_address, value, transaction_inputs):
 
         self.sender_address = sender_address                                                                                            #To public key του wallet από το οποίο προέρχονται τα χρήματα
         self.receiver_address = recipient_address                                                                                       #To public key του wallet στο οποίο θα καταλήξουν τα χρήματα
         self.amount = value                                                                                                             #το ποσό που θα μεταφερθεί
         self.transaction_id = sha256(Crypto.Random.get_random_bytes(128).encode()).hexdigest()                                                     #το hash του transaction
         self.transaction_inputs = transaction_inputs                                                                                    #λίστα από Transaction Input 
-        self.transaction_outputs = transaction_outputs                                                                                  #λίστα από Transaction Output
+        self.transaction_outputs = []                                                                              #λίστα από Transaction Output
         self.signature = self.sign_transaction(sender_private_key)
 
     def to_dict(self):
@@ -51,4 +51,4 @@ class Transaction:
         hash_obj = SHA.new(str(hash_obj).encode())
         public_key = RSA.importKey(public_key)
         verifier = PKCS1_v1_5.new(public_key)
-        return verifier.verify(hash_obj, base64.b64decode(self.Signature))
+        return verifier.verify(hash_obj, base64.b64decode(self.signature))

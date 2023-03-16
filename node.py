@@ -3,6 +3,7 @@ from wallet import wallet
 from transaction import Transaction
 import requests
 import json
+from uuid import uuid4
 
 CAPACITY = 2
 MINING_DIFFICULTY = 2
@@ -28,20 +29,38 @@ class node:
 	def create_transaction(self, receiver_address, amount):
 		#remember to broadcast it
 		sent_amount = 0
+		transaction_inputs = []
+		flag = False
 		for i, utxo in enumerate(self.wallet.UTXOs):
-			sent_amount += utxo
+			sent_amount += utxo['amount']
+			transaction_inputs.append(utxo['id'])
 			if sent_amount >= amount:
 				try:
 					self.wallet.UTXOs = self.wallet.UTXOs[i+1:]
 				except:
 					self.wallet.UTXOs = []
+				flag = True
 				break
 		
+		if flag:
+			new_transaction = Transaction(self.wallet.address, self.wallet.private_key, receiver_address, amount, transaction_inputs)
+			new_transaction.transaction_outputs = [{'id':  uuid4().hex,
+													'transactions_id': new_transaction.transaction_id,
+													'amount': amount,
+													'recipient': receiver_address},
+												   {'id':  uuid4().hex,
+													'transactions_id': new_transaction.transaction_id,
+													'amount': sent_amount-amount,
+													'recipient': self.wallet.address}]
 
-
-
-		new_transaction = Transaction(self.wallet.address, self.wallet.private_key, receiver_address, amount, transaction_inputs, transaction_outputs)
-
+			self.add_transaction_to_block(new_transaction, self.chain[-1])
+			self.broadcast_transaction(new_transaction)
+			return new_transaction
+		
+		else:
+			print("Invalid transaction (balance is not enough)")
+			return False
+	
 #--------------------------------------ADDITIONS/REGISTRATIONS-----------------------------------------
 
 	def register_node_to_ring(self, node):
@@ -63,26 +82,26 @@ class node:
 
 #--------------------------------------BROADCASTS-----------------------------------------------------
 
-	def broadcast_transaction(self, transaction, endpoint):
+	def broadcast_transaction(self, transaction, endpoint = '/broadcast/transaction'):
 		for node in self.ring:
 			address = 'https://' + str(node[1]) + ':' + str(node[2])
 			if node[id] != node.id:
-				response = requests.post(address + endpoint, data=json.dumps(transaction.stringify()))
+				response = requests.post(address + endpoint, data=json.dumps(transaction))
 				if response.status_code != 200:
 					return False
 		return True
 	
-	def broadcast_block(self, block, endpoint):
+	def broadcast_block(self, block, endpoint = '/broadcast/block'):
 		for node in self.ring:
 			address = 'https://' + str(node[1]) + ':' + str(node[2])
 			if node[id] != node.id:
-				response = requests.post(address + endpoint, data=json.dumps(block.stringify()))
+				response = requests.post(address + endpoint, data=json.dumps(block))
 				if response.status_code != 200:
 					return False
 		return True
 
 
-	def broadcast_ring(self, endpoint):
+	def broadcast_ring(self, endpoint = '/broadcast/ring'):
 		for node in self.ring:
 			address = 'https://' + str(node[1]) + ':' + str(node[2])
 			if node[id] != node.id:
@@ -91,7 +110,7 @@ class node:
 					return False
 		return True
 	
-	def broadcast_chain(self, endpoint):
+	def broadcast_chain(self, endpoint = '/broadcast/chain'):
 		for node in self.ring:
 			address = 'https://' + str(node[1]) + ':' + str(node[2])
 			if node[id] != node.id:
@@ -104,7 +123,7 @@ class node:
 
 	def validate_transaction(self, transaction):
 		#use of signature and NBCs balance
-
+		return transaction.verify_transaction(transaction.sender_address)
 
 	def valid_proof(self, proof, difficulty=MINING_DIFFICULTY):
 		return proof[:difficulty] == difficulty*'0'
