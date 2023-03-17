@@ -19,7 +19,6 @@ class Node:
 	def __init__(self):
 		self.id = None
 		self.blockchain = Blockchain()
-		self.id = None
 		self.NBCs = 0;
 		self.wallet = Wallet()
 		self.active_block = None
@@ -133,7 +132,7 @@ class Node:
 	
 	def validate_transaction(self,transaction):
 		#use of signature and NBCs balance
-		if (transaction.verify_signature() == False):
+		if (transaction.validate_transaction() == False):
 			return False
 		
 		for peer in self.ring:
@@ -217,7 +216,7 @@ class Node:
 		if (accepted == True):
 			with self.lock_chain:
 				if self.validate_block(block):
-					self.blockchain.chain.append(block)
+					self.blockchain.chain.add_block(block)
 
 	def validate_block(self,block):
 		condition1 = False
@@ -225,9 +224,11 @@ class Node:
 		
 		if (block.previousHash == self.blockchain.chain[-1].hash):
 			condition1 = True 
+			print(condition1)
 
 		if (block.hash == block.myHash()):
 			condition2 = True
+			print(condition2)
 
 		return (condition1 & condition2)
 			
@@ -248,7 +249,6 @@ class Node:
 						condition1 = True
 					if(chainOfBlocks[index].previousHash == chainOfBlocks[index-1].hash):
 						condition2 = True
-
 					if (condition1==False) or (condition2==False):
 						return False
 		return True
