@@ -224,11 +224,9 @@ class Node:
 		
 		if (block.previousHash == self.blockchain.chain[-1].hash):
 			condition1 = True 
-			print(condition1)
 
 		if (block.hash == block.myHash()):
 			condition2 = True
-			print(condition2)
 
 		return (condition1 & condition2)
 			

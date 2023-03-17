@@ -72,7 +72,8 @@ node.active_block.previousHash = node.blockchain.chain[0].hash
 node.active_block.hash = node.active_block.myHash()
 #print block contents
 node.active_block.stringify()
-#append block in the blockchain
-node.blockchain.add_block(node.active_block)
 #check if the initial block is valid
 node.validate_block(node.active_block)
+#append block in the chain
+node.blockchain.add_block(node.active_block)
+#validate chain
