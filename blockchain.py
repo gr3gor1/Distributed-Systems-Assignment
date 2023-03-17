@@ -10,13 +10,19 @@ class Blockchain:
     def __init__(self):
         self.list_blocks = []
         self.list_transactions = []
+        
+        ### orizoume to threat gia to mining ###
+        
         self.mine = threading.Event()
 
+## theloume na paroume to ring me oles tis addresses gia na mporoume na stelnoume pantou ##
 
-    def get_addresses(self, addresses): # ring, node_id is node.id
+    def get_addresses(self, addresses):
         #print("aaaaaaaaaaaaaaaaaaaaaaaaa")
         self.ring = copy.deepcopy(addresses)
         return
+    
+ ### otan orizoume ton bootstrap ftiaxetai to genesis kai bazei kai ena transaction mesa ##   
     
     def genesis_block(self,participants,address):
         money = 100 * (participants + 1)
@@ -25,7 +31,7 @@ class Blockchain:
         genesis_block.add_transaction(trans.to_dict())
         genesis_block.cur_hash = genesis_block.myHash()
         self.list_blocks.append(genesis_block)
-        print("genesis created")
+        print("genesis_block")
         return
 
     def print_blocks(self):
@@ -35,6 +41,8 @@ class Blockchain:
             current_block.print_cont()
         return
     
+    
+    ## prosthetoume transaction kai blepoyme an exei gemisei to block ###
     
     def add_transaction(self,transaction):
         print("new transaction")

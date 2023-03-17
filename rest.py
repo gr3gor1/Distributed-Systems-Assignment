@@ -35,11 +35,28 @@ def register():
     ad = request.json['address']
     pub= request.json['public_key']
     if (ad is None) or (pub is None):
-        return "Error:No valid address", 400
-    #print(mykey)
+        return "Error:No valid address or public key", 400
     master.register_node(ad, pub)
     response = {'message': 'ok'}
     return jsonify(response), 200
+
+@app.route('/child/register',methods=['POST'])
+def register_child():
+    myid = request.json['id']
+    ring = request.json['ring']
+    pub = request.json['public_key_list']
+    genesis = request.json['genesis']
+
+    if myid is None:
+        return "Error:No valid myid",400
+    if ring is None:
+        return "Error:No valid ring",400
+    if pub is None:
+        return "Error:No valid public keys",400
+    master.recieve(myid,ring,pub,genesis)
+    response = {'message': 'ok'}
+    return jsonify(response), 200
+        
 
 
 
