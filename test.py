@@ -56,7 +56,23 @@ node = Node()
 node.create_new_block()
 #register node to ring
 node.register_node_to_ring("192.168.1.2","id0",3000,node.wallet.public_key,200)
+#create hash of genesis block
+node.active_block.hash = node.active_block.myHash()
+#show genesis info
+node.active_block.stringify()
 #add block to node's blockchain
+node.blockchain.add_block(node.active_block)
+#create a new active block
+node.create_new_block()
+#give index 1 
+node.active_block.index = 1
+#give previousHash
+node.active_block.previousHash = node.blockchain.chain[0].hash
+#give current hash
+node.active_block.hash = node.active_block.myHash()
+#print block contents
+node.active_block.stringify()
+#append block in the blockchain
 node.blockchain.add_block(node.active_block)
 #check if the initial block is valid
 node.validate_block(node.active_block)
