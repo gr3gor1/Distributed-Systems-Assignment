@@ -28,6 +28,6 @@ class wallet:
 		self.transactions.append(transaction)
 
 	def balance(self):
-		return sum(self.UTXOs['amount'])
+		return 0
 
 

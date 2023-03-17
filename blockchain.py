@@ -4,10 +4,10 @@ from transaction import Transaction
 class Blockchain:
     def __init__(self):
         self.chain = []
-        self.genesis_block()
+        #self.genesis_block()
 
-    def genesis_block(self):
-        genesis_block = Block(0, "1", [])
+    def create_genesis_block(self, bootstrap_address, amount):
+        genesis_block = Block(0, "1", [Transaction("0", "0", recipient_address=bootstrap_address, value=amount, transaction_inputs=None)])
         self.chain.append(genesis_block)
 
     def add_block(self, block):

@@ -4,38 +4,42 @@ from transaction import Transaction
 import requests
 import json
 from uuid import uuid4
+import threading
+import pickle
 
 CAPACITY = 2
 MINING_DIFFICULTY = 2
 
+headers={'Content-type':'application/json','Accept':'text/plain'}
+
 class node:
-	def __init__(self, id, bootstrap, ip, port, chain):
+	def __init__(self, id, bootstrap, ip, port, blockchain):
 		
 		self.id = id
 		self.bootstrap = bootstrap
 		self.ip = ip
 		self.port = port 
-		self.chain = chain
+		self.blockchain = blockchain
 		self.wallet = wallet()
 		self.ring = []   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
-		if self.bootstrap == False:
-			self.share_node_info()
-
+		if self.bootstrap == 1:
+			self.blockchain.create_genesis_block()
+			self.ring.append({'id': self.id, 
+							  'ip': self.ip, 
+							  'port': self.port, 
+							  'public_key': self.wallet.public_key})
+		else:
+			child = threading.Thread(target = self.share_node_info)
+			child.start()
 
 	def share_node_info(self):
 		data = {'id': self.id, 
 				'ip': self.ip, 
 				'port': self.port, 
-				'public_key': self.wallet.public_key,
-				'balance': self.wallet.balance()}
-		
-		address = 'https://127.0.0.1:5000/get_ring_info'
-		response = requests.post(address, data=json.dumps(data))
-		print(response.json())
+				'public_key': self.wallet.public_key}
 
-
-		
-
+		address = 'http://127.0.0.1:5000/get_ring_info'
+		response = requests.post(address, data=json.dumps(data), headers=headers)
 
 #--------------------------------------NEW BLOCKS/TRANSACTIONS----------------------------------------
 
@@ -71,7 +75,7 @@ class node:
 													'amount': sent_amount-amount,
 													'recipient': self.wallet.address}]
 
-			self.add_transaction_to_block(new_transaction, self.chain[-1])
+			self.add_transaction_to_block(new_transaction, self.blockchain.chain[-1])
 			self.broadcast_transaction(new_transaction)
 			return new_transaction
 		
@@ -81,15 +85,11 @@ class node:
 	
 #--------------------------------------ADDITIONS/REGISTRATIONS-----------------------------------------
 
-	def register_node_to_ring(self, node):
+	def register_node_to_ring(self, data):
 		#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
 		#bootstrap node informs all other nodes and gives the request node an id and 100 NBCs
-		if self.bootstrap:
-			self.ring.append({'id': node.id, 
-							  'ip': node.ip, 
-							  'port': node.port, 
-							  'public_key': node.wallet.public_key,
-							  'balance': node.wallet.balance()})
+		if self.bootstrap ==  1:
+			self.ring.append(data)
 			return True
 		else:
 			return False
@@ -104,39 +104,39 @@ class node:
 
 #--------------------------------------BROADCASTS-----------------------------------------------------
 
-	def broadcast_transaction(self, transaction, endpoint = '/broadcast/transaction'):
+	def broadcast_transaction(self, transaction):
 		for node in self.ring:
-			address = 'https://' + str(node['ip']) + ':' + str('port')
-			if node[id] != node.id:
-				response = requests.post(address + endpoint, data=json.dumps(transaction))
+			address = 'http://' + str(node['ip']) + ':' + str('port') + '/broadcast/transaction'
+			if node['id'] != self.id:
+				response = requests.post(address, data=json.dumps(transaction))
 				if response.status_code != 200:
 					return False
 		return True
 	
-	def broadcast_block(self, block, endpoint = '/broadcast/block'):
+	def broadcast_block(self, block):
 		for node in self.ring:
-			address = 'https://' + str(node['ip']) + ':' + str(node['port'])
-			if node[id] != node.id:
-				response = requests.post(address + endpoint, data=json.dumps(block))
+			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/block'
+			if node['id'] != self.id:
+				response = requests.post(address, data=pickle.dumps(block))
 				if response.status_code != 200:
 					return False
 		return True
 
 
-	def broadcast_ring(self, endpoint = '/broadcast/ring'):
+	def broadcast_ring(self):
 		for node in self.ring:
-			address = 'https://' + str(node.ring['ip']) + ':' + str(node['port'])
-			if node[id] != node.id:
-				response = requests.post(address + endpoint, data=json.dumps(self.ring))
+			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/ring'
+			if node['id'] != self.id:
+				response = requests.post(address, data=json.dumps(self.ring))
 				if response.status_code != 200:
 					return False
 		return True
 	
-	def broadcast_chain(self, endpoint = '/broadcast/chain'):
+	def broadcast_chain(self):
 		for node in self.ring:
-			address = 'https://' + str(node['ip']) + ':' + str(node['port'])
-			if node[id] != node.id:
-				response = requests.post(address + endpoint, data=json.dumps(self.chain))
+			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/chain'
+			if node['id'] != self.id:
+				response = requests.post(address, data=json.dumps(self.blockchain.chain))
 				if response.status_code != 200:
 					return False
 		return True
@@ -152,8 +152,8 @@ class node:
 
 	def validate_chain(self):
 		for i in range(1, len(self.chain)):
-			current = self.chain[i]
-			previous = self.chain[i-1]
+			current = self.blockchain.chain[i]
+			previous = self.blockchain.chain[i-1]
 			if(current.hash != current.myHash()):
 				print("Current hash does not equal generated hash")
 				return False
@@ -165,7 +165,7 @@ class node:
 #--------------------------------------MINING-----------------------------------------------------
 
 	def mine_block(self):    
-		new_block = Block(previous_hash = self.chain[-1].hash, transactions = [])
+		new_block = Block(previous_hash = self.blockchain.chain[-1].hash, transactions = [])
 		proof = self.proof_of_work(new_block)
 		return new_block, proof 
 
@@ -182,8 +182,8 @@ class node:
 		#check for the longer chain across all nodes
 		chains = []
 		for node in self.ring:
-			if node[0] != self.id:
-				address = 'http://' + node[1] + ':' + node[2]
+			if node['id'] != self.id:
+				address = 'http://' + node['ip'] + ':' + node['port']
 				response = requests.get(address + "/send_chain")
 				chains.append(response._content)
 		
@@ -199,8 +199,8 @@ class node:
 		#resolve correct chain
 		valid_chain = self.valid_chain()
 		for node in self.ring:
-			if node[0] != self.id:
-				address = 'http://' + node[1] + ':' + node[2]
+			if node['id'] != self.id:
+				address = 'http://' + node['ip'] + ':' + node['port']
 				response = requests.post(address + "/send_chain", data=json.dumps(valid_chain))
 				if response.status_code != 200:
 					return False
@@ -209,7 +209,7 @@ class node:
 #--------------------------------------VIEWS-----------------------------------------------------
 
 	def view_transactions(self):
-		return self.chain[-1].transactions
+		return self.blockchain.chain[-1].transactions
 
 	def view_balance(self):
 		return self.wallet.balance()
