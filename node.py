@@ -45,7 +45,6 @@ class node:
 
 	def create_new_block(self):
 		new_block, proof = self.mine_block()
-		print(proof)
 		self.broadcast_block(new_block)
 		return new_block
 
@@ -58,6 +57,7 @@ class node:
 													'amount': amount,
 													'recipient': recipient_address}]
 			self.wallet.UTXOs.extend(new_transaction.transaction_outputs)
+			return new_transaction
 		else:
 			sent_amount = 0
 			transaction_inputs = []

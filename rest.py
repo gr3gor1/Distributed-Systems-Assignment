@@ -93,6 +93,7 @@ def get_ring():
 def get_transaction():
     data = pickle.loads(request.get_data())
     node_.add_transaction_to_block(data, node_.blockchain.chain[-1])
+    node_.wallet.UTXOs.extend(data.transaction_outputs)
     return jsonify({"Broadcast": "Done"}), 200
 
 #broadcast block        
@@ -116,7 +117,6 @@ def get_chain():
 @app.route('/balance', methods=['GET'])
 def get_balance():
     balance = node_.wallet.balance()
-
     response = {'Balance': balance}
     return jsonify(response), 200
 
@@ -125,7 +125,6 @@ def get_balance():
 @app.route('/transactions', methods=['GET'])
 def get_transactions_of_the_last_block():
     transactions = node_.chain[-1].transactions
-
     response = {'Transactions': transactions}
     return jsonify(response), 200
 
@@ -134,7 +133,6 @@ def get_transactions_of_the_last_block():
 @app.route('/transactions/get', methods=['GET'])
 def get_transactions():
     transactions = blockchain.transactions
-
     response = {'transactions': transactions}
     return jsonify(response), 200
 
