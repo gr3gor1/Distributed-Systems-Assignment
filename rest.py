@@ -60,8 +60,10 @@ def register_child():
 @app.route('/broadcast/transaction', methods=['POST'])
 def get_transaction():
     data = pickle.loads(request.get_data())
-    print(data)
     master.chain.add_transaction(data)
+    master.wallet.UTXOs.extend(data.transaction_outputs)
+    #master.wallet.transactions.extend(data[0])
+    print(master.wallet.mybalance())
     return jsonify({"Broadcast": "Done"}), 200
         
 

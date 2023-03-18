@@ -48,7 +48,7 @@ class Blockchain:
     def add_transaction(self,transaction):
         print("new transaction")
         self.list_transactions.append(transaction.to_dict())
-        print(len(self.list_transactions))
+        #print(len(self.list_transactions))
         if(len(self.list_transactions)==CAPACITY):
             previous_hash = self.list_blocks[-1].cur_hash
             new_block = Block(len(self.list_blocks),self.list_transactions,previous_hash)
@@ -68,9 +68,9 @@ class Blockchain:
             message = {
                         'last_block': self.list_blocks[-1].print_contents() # to JSON
                     }
-            print(message)
+        return
     
-    
+
     
     def output (self):
         outlist = []
