@@ -6,7 +6,7 @@ from node import Node
 
 #test block class
 
-#create bloc
+#create block
 bl = Block(0,1)
 #check attributes after initial creation
 bl.stringify()
@@ -39,15 +39,6 @@ wallet.stringify()
 #show initial balance without any UTXOs
 wallet.balance()
 
-#test transaction class
-
-#create transaction instance
-
-#sign transaction
-
-#stringify transaction
-
-
 #test node class
 
 #create a node
@@ -74,6 +65,19 @@ node.active_block.hash = node.active_block.myHash()
 node.active_block.stringify()
 #check if the initial block is valid
 node.validate_block(node.active_block)
-#append block in the chain
+#check the chain only with one block in it
+node.valid_chain(node.blockchain)
+#append active block in the chain
 node.blockchain.add_block(node.active_block)
-#validate chain
+#check the current chain
+node.valid_chain(node.active_block)
+#create one more block
+node.create_new_block()
+#mine block
+node.mine_block(node.active_block)
+#check the block contents
+node.active_block.stringify()
+
+#need to test endpoints
+#need to test conflicts
+#need to test transactions

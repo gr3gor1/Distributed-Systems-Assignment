@@ -180,9 +180,9 @@ class Node:
 	def mine_block(self,block):
 		block.nonce = 0
 		block.index = self.blockchain.chain[-1].index + 1
-		block.previous_hash = self.blockchain.chain[-1].hash
+		block.previousHash = self.blockchain.chain[-1].hash
 		current_hash = block.myHash()
-		while(current_hash.startsWith('0'*DIFFICULTY) == False & self.mining_flag==False):
+		while(current_hash.startswith('0'*DIFFICULTY) == False & self.mining_flag==False):
 			block.nonce +=1
 			current_hash = block.myHash()
 		block.hash = current_hash
@@ -240,9 +240,9 @@ class Node:
 
 		for index in range(len(chainOfBlocks)):
 			if index == 0 :
-				if(chainOfBlocks[index].hash != 1 or chainOfBlocks[index].hash != chainOfBlocks[index].myHash()):
+				if(chainOfBlocks[index].previousHash != 1 or chainOfBlocks[index].hash != chainOfBlocks[index].myHash()):
 					return False
-				else:
+			else:
 					if(chainOfBlocks[index].hash == chainOfBlocks[index].myHash()):
 						condition1 = True
 					if(chainOfBlocks[index].previousHash == chainOfBlocks[index-1].hash):
