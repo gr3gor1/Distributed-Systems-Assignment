@@ -62,6 +62,7 @@ def get_info():
                 print('Failed to broadcast the genesis block.')
             
             initial_transaction = node_.create_transaction(node_.wallet.address, 500, initial_transaction=True)
+            print(node_.wallet.balance())
 
         return jsonify(data), 200
     else:
@@ -82,9 +83,9 @@ def get_ring():
    
 @app.route('/broadcast/transaction', methods=['POST'])
 def get_transaction():
-    data = pickle.loads(request.get_json())
+    data = pickle.loads(request.get_data())
     node_.add_transaction_to_block(data, node_.blockchain.chain[-1])
-    return jsonify(data), 200
+    return jsonify({"Broadcast": "Done"}), 200
 
 #broadcast block        
    

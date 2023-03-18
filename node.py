@@ -66,7 +66,7 @@ class node:
 			transaction_inputs = []
 			flag = False
 			for i, utxo in enumerate(self.wallet.UTXOs):
-				if utxo['recipient'] == self.address:
+				if utxo['recipient'] == self.wallet.address:
 					sent_amount += utxo['amount']
 					transaction_inputs.append(utxo['id'])
 					if sent_amount >= amount:
