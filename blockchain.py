@@ -4,7 +4,7 @@ import threading
 import time
 import copy
 
-CAPACITY=1
+CAPACITY=2
 
 class Blockchain:
     def __init__(self):
@@ -28,6 +28,7 @@ class Blockchain:
         money = 100 * (participants + 1)
         genesis_block = Block(len(self.list_blocks),[],'0')
         trans = Transaction('0', address, money, [])
+        self.list_transactions.append(trans)
         genesis_block.add_transaction(trans.to_dict())
         genesis_block.cur_hash = genesis_block.myHash()
         self.list_blocks.append(genesis_block)
@@ -47,8 +48,9 @@ class Blockchain:
     def add_transaction(self,transaction):
         print("new transaction")
         self.list_transactions.append(transaction.to_dict())
+        print(len(self.list_transactions))
         if(len(self.list_transactions)==CAPACITY):
-            previous_hash = self.chain[-1].cur_hash
+            previous_hash = self.list_blocks[-1].cur_hash
             new_block = Block(len(self.list_blocks),self.list_transactions,previous_hash)
             self.list_transactions = []
             self.mine.clear()

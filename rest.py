@@ -8,6 +8,7 @@ from transaction import Transaction
 from blockchain import Blockchain
 from block import Block
 from flask_cors import CORS
+import pickle
 
 
 
@@ -46,7 +47,6 @@ def register_child():
     ring = request.json['ring']
     pub = request.json['public_key_list']
     genesis = request.json['genesis']
-
     if myid is None:
         return "Error:No valid myid",400
     if ring is None:
@@ -56,6 +56,13 @@ def register_child():
     master.recieve(myid,ring,pub,genesis)
     response = {'message': 'ok'}
     return jsonify(response), 200
+
+@app.route('/broadcast/transaction', methods=['POST'])
+def get_transaction():
+    data = pickle.loads(request.get_data())
+    print(data)
+    master.chain.add_transaction(data)
+    return jsonify({"Broadcast": "Done"}), 200
         
 
 

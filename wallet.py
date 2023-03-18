@@ -17,9 +17,10 @@ class wallet:
 	def __init__(self):
 		##set
 
-		self.public_key,self.private_key= self.generate_wallet()
+		self.private_key,self.public_key= self.generate_wallet()
 		self.address=self.public_key
 		self.transactions=[]
+		self.UTXOs = []
   
   
 	def generate_wallet(self):	
@@ -39,3 +40,11 @@ class wallet:
 	def add_transaction(self, transaction):
 		#add a transaction to the block
 		self.transactions.append(transaction)
+  
+  
+	def mybalance(self):
+		balance = 0
+		for utxo in self.UTXOs:
+			if utxo['recipient'] == self.address:
+				balance += utxo['value']
+		return balance

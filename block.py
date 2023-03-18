@@ -48,6 +48,7 @@ class Block:
 		content={
 		"index": self.index,
 		"timestamp":self.timestamp,
+		"nonce":self.nonce,
 		"transactions:": self.listOftransactions,
 		"cur_hash:": self.cur_hash,
 		"previous_hash:": self.previous_hash}
@@ -59,3 +60,14 @@ class Block:
 		print("transactions:", self.listOftransactions)
 		print("current hash:", self.hash)
 		print("previous hash:", self.previous_hash)
+
+	def block_to_json(self):
+		result = json.dumps(dict(
+      	index = self.index,
+		timestamp = self.timestamp.__str__(),
+		transactions = self.listOftransactions,
+		nonce = self.nonce,
+		cur_hash = self.cur_hash,
+		previous_hash = self.previous_hash
+		), sort_keys = True)
+		return(result)

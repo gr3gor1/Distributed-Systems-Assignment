@@ -1,3 +1,4 @@
+from uuid import uuid4
 from block import Block
 from wallet import wallet
 from blockchain import Blockchain
@@ -7,7 +8,7 @@ import threading
 import json 
 import time 
 import copy
-
+import pickle
 
 headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
@@ -36,6 +37,12 @@ class node:
 			self.public_key_list = [self.wallet.public_key]
 			self.chain.genesis_block(participants, self.wallet.address)
 			self.wallet.add_transaction(self.chain.list_blocks[0].listOftransactions[0])
+			transaction_outputs = {					'id':  uuid4().hex,
+													'transactions_id': self.chain.list_blocks[0].listOftransactions[0]["transaction_id"],
+													'value': self.chain.list_blocks[0].listOftransactions[0]["value"],
+													'recipient': self.chain.list_blocks[0].listOftransactions[0]["recipient_address"]}
+			#print(transaction_outputs)
+			self.wallet.UTXOs.append(transaction_outputs)
 			
    
    ####----orizoume to threat pou tha kanei thn ktelesei tou bootstrap ---###
@@ -85,9 +92,9 @@ class node:
 			self.wallet_dict={}
 			for public_key in self.public_key_list:
 				self.wallet_dict[public_key] = []
-			if  no_mine.isSet():
-				#no_mine.wait()
-				self.send_transactions(i+1,self.public_key_list[i+1])
+			if  not no_mine.isSet():
+				no_mine.wait()
+			self.send_transactions(i+1,self.public_key_list[i+1])
 			
 		return
   
@@ -99,7 +106,7 @@ class node:
             'id': identity,
             'ring': self.ring,
             'public_key_list': self.public_key_list,
-            'genesis': self.chain.list_blocks[0].print_contents()  
+            'genesis': self.chain.list_blocks[0].block_to_json() 
         }
 
 		message = json.dumps(data)
@@ -119,29 +126,87 @@ class node:
 		self.wallet_dict={}
 		for public_key in self.public_key_list:
 			self.wallet_dict[public_key] = []
-
-		gen = Block(genesis['index'], genesis['transactions'],genesis['nonce'], genesis['prev_hash'], genesis['timestamp'])
-		self.chain.list_of_blocks.append(gen)
-		trans_block_list = json.loads(genesis['transactions'])  # list
-		trans = trans_block_list  
+		
+		genesis = json.loads(genesis)
+		new_index=genesis['index']
+		new_trans=genesis['transactions']
+		new_pre=genesis['previous_hash']
+		gen = Block(new_index, new_trans, new_pre)
+		gen.nonce=genesis['nonce']
+		gen.timestamp=genesis['timestamp']
+		self.chain.list_blocks.append(gen)
+		trans_block_list = genesis['transactions'][0] # list
+		trans = trans_block_list 
+		self.chain.list_transactions.append(trans)
 
 		current_trans = {
             'transaction_id': trans['transaction_id'],
-            'amount': trans['amount'],
+            'value': trans['value'],
             'receiver': trans['recipient_address']
         }
 
-        # Adding the father's transanction to trans_dict (father is the sender)
-		self.wallet_dict[self.public_keys[0]].append(current_trans)
+		self.wallet_dict[self.public_key_list[0]].append(current_trans)
+		return
 
    
 	def send_transactions(self,i,receiver_address):
 		print("send 100 to {} node".format(i))
-		#self.create_transaction(self.public_key_list[0],receiver_address,100)
-		print(self.public_key_list[0],receiver_address,100)
-		print("my balance father", self.wallet.balance())
+		self.create_transaction(self.public_key_list[0],receiver_address,100)
+		print("Boss balance", self.wallet.mybalance())
    
+	
+	def create_transaction(self, sender,receiver_address, value):
+		#remember to broadcast it
+		sent_value = 0
+		transaction_inputs = []
+		flag = False
+		for i, utxo in enumerate(self.wallet.UTXOs):
+			if utxo['recipient'] == self.wallet.address:
+				sent_value += utxo['value']
+				transaction_inputs.append(utxo['id'])
+				if sent_value >= value:
+					try:
+						self.wallet.UTXOs = self.wallet.UTXOs[i+1:]
+					except:
+						self.wallet.UTXOs = []
+					flag = True
+					break
 		
+		if flag:
+			new_transaction = Transaction(sender,receiver_address, value, transaction_inputs)
+			new_transaction.transaction_outputs = [{'id':  uuid4().hex,
+													'transactions_id': new_transaction.transaction_id,
+													'value': value,
+													'recipient': receiver_address},
+												   {'id':  uuid4().hex,
+													'transactions_id': new_transaction.transaction_id,
+													'value': sent_value-value,
+													'recipient':sender}]
+			
+			self.wallet.UTXOs.extend(new_transaction.transaction_outputs)
+			self.wallet_dict[receiver_address].append(new_transaction.transaction_outputs[0])
+			new_transaction.Signature = new_transaction.sign_transaction(self.wallet.private_key)
+		
+			self.broadcast_transaction(new_transaction)
+			self.chain.add_transaction(new_transaction)
+   		
+			return new_transaction
+		
+		else:
+			print("Invalid transaction (balance is not enough)")
+			return False
+
+
+#--------------------------------------BROADCASTS-----------------------------------------------------
+
+	def broadcast_transaction(self, transaction):
+		for rin in self.ring:
+			address = rin + '/broadcast/transaction'
+			if rin != ("http://" + str(self.ip) + ":"+ str(self.port)):
+				response = requests.post(address, data=pickle.dumps(transaction))
+				if response.status_code != 200:
+					return False
+		return True
  
  
 	'''def create_transaction(sender, receiver, signature):

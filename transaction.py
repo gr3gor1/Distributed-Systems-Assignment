@@ -80,14 +80,13 @@ class Transaction:
         """
         Sign transaction with private key
         """
-        private_key = RSA.importKey(sender_private_key)
+        private_key = RSA.importKey(binascii.unhexlify(sender_private_key))
         signer = PKCS1_v1_5.new(private_key)
         
         hash_obj = self.to_dict2()
         hash_obj = SHA.new(str(hash_obj).encode('utf8'))
-        self.Signature = (base64.b64encode(signer.sign(hash_obj)).decode())
-        
-        return 
+        print(hash_obj)
+        return binascii.hexlify(signer.sign(hash_obj)).decode('ascii')
        
     def verify_signature(self,public_key):
         # Load public key and verify message
@@ -95,9 +94,9 @@ class Transaction:
         hash_obj = self.to_dict2()
         hash_obj = SHA.new(str(hash_obj).encode())
         
-        public_key = RSA.importKey(public_key)
+        public_key = RSA.importKey(binascii.unhexlify(public_key))
         verifier = PKCS1_v1_5.new(public_key)
 
-        verify = verifier.verify(hash_obj, base64.b64decode(self.Signature))
+        verify = verifier.verify(hash_obj,  binascii.unhexlify(self.Signature))
         
         return verify
