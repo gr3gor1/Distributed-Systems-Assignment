@@ -15,8 +15,8 @@ from uuid import uuid4
 class wallet:
 
 	def __init__(self):
-
-		key = RSA.generate(2048)
+		random_gen = Crypto.Random.new().read
+		key = RSA.generate(1024, random_gen)
 		public_key = key.publickey()
 		self.public_key = binascii.hexlify(public_key.exportKey(format='DER')).decode('ascii')
 		self.private_key = binascii.hexlify(key.exportKey(format='DER')).decode('ascii')
@@ -28,6 +28,10 @@ class wallet:
 		self.transactions.append(transaction)
 
 	def balance(self):
-		return 0
+		balance = 0
+		for utxo in self.UTXOs:
+			if utxo['recipient'] == self.address:
+				balance += utxo['amount']
+		return balance
 
 

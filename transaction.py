@@ -11,19 +11,20 @@ from hashlib import sha256
 import requests
 from flask import Flask, jsonify, request, render_template
 import base64
+from uuid import uuid4
 
 
 class Transaction:
 
-    def __init__(self, sender_address, sender_private_key, recipient_address, value, transaction_inputs):
+    def __init__(self, sender_address, recipient_address, value, transaction_inputs):
 
         self.sender_address = sender_address                                                                                            #To public key του wallet από το οποίο προέρχονται τα χρήματα
         self.receiver_address = recipient_address                                                                                       #To public key του wallet στο οποίο θα καταλήξουν τα χρήματα
         self.amount = value                                                                                                             #το ποσό που θα μεταφερθεί
-        self.transaction_id = sha256(Crypto.Random.get_random_bytes(128).encode()).hexdigest()                                                     #το hash του transaction
+        self.transaction_id = uuid4().hex                                                                                               #το hash του transaction
         self.transaction_inputs = transaction_inputs                                                                                    #λίστα από Transaction Input 
-        self.transaction_outputs = []                                                                              #λίστα από Transaction Output
-        self.signature = self.sign_transaction(sender_private_key)
+        self.transaction_outputs = []                                                                                                   #λίστα από Transaction Output
+        self.signature = None
 
     def to_dict(self):
         transaction_dict = OrderedDict()
@@ -43,7 +44,7 @@ class Transaction:
         signer = PKCS1_v1_5.new(private_key)
         hash_obj = self.to_dict()
         hash_obj = SHA.new(str(hash_obj).encode('utf8'))
-        return base64.b64encode(signer.sign(hash_obj)).decode()
+        self.signature = base64.b64encode(signer.sign(hash_obj)).decode()
 
     def verify_signature(self, public_key):
         # Load public key and verify message

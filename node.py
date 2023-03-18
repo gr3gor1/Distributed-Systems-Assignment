@@ -23,7 +23,9 @@ class node:
 		self.wallet = wallet()
 		self.ring = []   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 		if self.bootstrap == 1:
-			self.blockchain.create_genesis_block()
+			self.blockchain.create_genesis_block(self.wallet.address, 500)
+			#self.create_transaction(self.wallet.address, 500, initial_transaction=True)
+			#self.add 
 			self.ring.append({'id': self.id, 
 							  'ip': self.ip, 
 							  'port': self.port, 
@@ -48,41 +50,53 @@ class node:
 		self.broadcast(new_block)
 		return new_block
 
-	def create_transaction(self, receiver_address, amount):
+	def create_transaction(self, recipient_address, amount, initial_transaction=False):
 		#remember to broadcast it
-		sent_amount = 0
-		transaction_inputs = []
-		flag = False
-		for i, utxo in enumerate(self.wallet.UTXOs):
-			sent_amount += utxo['amount']
-			transaction_inputs.append(utxo['id'])
-			if sent_amount >= amount:
-				try:
-					self.wallet.UTXOs = self.wallet.UTXOs[i+1:]
-				except:
-					self.wallet.UTXOs = []
-				flag = True
-				break
-		
-		if flag:
-			new_transaction = Transaction(self.wallet.address, self.wallet.private_key, receiver_address, amount, transaction_inputs)
+		if initial_transaction:
+			new_transaction = Transaction("0", recipient_address=recipient_address, value=amount, transaction_inputs=None)
 			new_transaction.transaction_outputs = [{'id':  uuid4().hex,
-													'transactions_id': new_transaction.transaction_id,
+													'transaction_id': new_transaction.transaction_id,
 													'amount': amount,
-													'recipient': receiver_address},
-												   {'id':  uuid4().hex,
-													'transactions_id': new_transaction.transaction_id,
-													'amount': sent_amount-amount,
-													'recipient': self.wallet.address}]
-
+													'recipient': recipient_address}]
+			self.wallet.UTXOs.extend(new_transaction.transaction_outputs)
 			self.add_transaction_to_block(new_transaction, self.blockchain.chain[-1])
 			self.broadcast_transaction(new_transaction)
-			return new_transaction
-		
 		else:
-			print("Invalid transaction (balance is not enough)")
-			return False
-	
+			sent_amount = 0
+			transaction_inputs = []
+			flag = False
+			for i, utxo in enumerate(self.wallet.UTXOs):
+				if utxo['recipient'] == self.address:
+					sent_amount += utxo['amount']
+					transaction_inputs.append(utxo['id'])
+					if sent_amount >= amount:
+						try:
+							self.wallet.UTXOs = self.wallet.UTXOs[i+1:]
+						except:
+							self.wallet.UTXOs = []
+						flag = True
+						break
+			
+			if flag:
+				new_transaction = Transaction(self.wallet.address, self.wallet.private_key, recipient_address, amount, transaction_inputs)
+				new_transaction.transaction_outputs = [{'id':  uuid4().hex,
+														'transaction_id': new_transaction.transaction_id,
+														'amount': amount,
+														'recipient': recipient_address},
+													   {'id':  uuid4().hex,
+														'transaction_id': new_transaction.transaction_id,
+														'amount': sent_amount-amount,
+														'recipient': self.wallet.address}]
+
+				self.wallet.UTXOs.extend(new_transaction.transaction_outputs)
+				self.add_transaction_to_block(new_transaction, self.blockchain.chain[-1])
+				self.broadcast_transaction(new_transaction)
+				return new_transaction
+			
+			else:
+				print("Invalid transaction (balance is not enough)")
+				return False
+
 #--------------------------------------ADDITIONS/REGISTRATIONS-----------------------------------------
 
 	def register_node_to_ring(self, data):
@@ -106,9 +120,9 @@ class node:
 
 	def broadcast_transaction(self, transaction):
 		for node in self.ring:
-			address = 'http://' + str(node['ip']) + ':' + str('port') + '/broadcast/transaction'
+			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/transaction'
 			if node['id'] != self.id:
-				response = requests.post(address, data=json.dumps(transaction))
+				response = requests.post(address, data=pickle.dumps(transaction))
 				if response.status_code != 200:
 					return False
 		return True
@@ -151,7 +165,7 @@ class node:
 		return proof[:difficulty] == difficulty*'0'
 
 	def validate_chain(self):
-		for i in range(1, len(self.chain)):
+		for i in range(1, len(self.blockchain.chain)):
 			current = self.blockchain.chain[i]
 			previous = self.blockchain.chain[i-1]
 			if(current.hash != current.myHash()):
