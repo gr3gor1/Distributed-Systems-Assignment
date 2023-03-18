@@ -11,6 +11,7 @@ from wallet import wallet
 from transaction import Transaction
 import json  
 import pickle   
+import threading
 
 
 ### JUST A BASIC EXAMPLE OF A REST API WITH FLASK
@@ -61,8 +62,15 @@ def get_info():
             else:
                 print('Failed to broadcast the genesis block.')
             
-            initial_transaction = node_.create_transaction(node_.wallet.address, 500, initial_transaction=True)
-            print(node_.wallet.balance())
+            initial_transaction = node_.create_transaction(node_.wallet.address, 200, initial_transaction=True)
+            node_.broadcast_transaction(initial_transaction)
+            node_.add_transaction_to_block(initial_transaction, node_.blockchain.chain[-1])
+
+            for node in node_.ring:
+                if node['id'] != node_.id:
+                    new_transaction = node_.create_transaction(node['public_key'], 100)
+                    node_.broadcast_transaction(new_transaction)
+                    node_.add_transaction_to_block(new_transaction, node_.blockchain.chain[-1])
 
         return jsonify(data), 200
     else:

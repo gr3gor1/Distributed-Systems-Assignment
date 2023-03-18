@@ -40,16 +40,16 @@ class Transaction:
 
     def sign_transaction(self, sender_private_key):
         #Sign transaction with private key
-        private_key = RSA.importKey(sender_private_key)
+        private_key = RSA.importKey(binascii.unhexlify(sender_private_key))
         signer = PKCS1_v1_5.new(private_key)
         hash_obj = self.to_dict()
         hash_obj = SHA.new(str(hash_obj).encode('utf8'))
-        self.signature = base64.b64encode(signer.sign(hash_obj)).decode()
+        self.signature = binascii.hexlify(signer.sign(hash_obj)).decode('ascii')
 
     def verify_signature(self, public_key):
         # Load public key and verify message
         hash_obj = self.to_dict()
         hash_obj = SHA.new(str(hash_obj).encode())
-        public_key = RSA.importKey(public_key)
+        public_key = RSA.importKey(binascii.unhexlify(public_key))
         verifier = PKCS1_v1_5.new(public_key)
-        return verifier.verify(hash_obj, base64.b64decode(self.signature))
+        return verifier.verify(hash_obj, binascii.unhexlify(self.signature))

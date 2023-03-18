@@ -7,7 +7,7 @@ from uuid import uuid4
 import threading
 import pickle
 
-CAPACITY = 2
+CAPACITY = 1
 MINING_DIFFICULTY = 2
 
 headers={'Content-type':'application/json','Accept':'text/plain'}
@@ -24,8 +24,6 @@ class node:
 		self.ring = []   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 		if self.bootstrap == 1:
 			self.blockchain.create_genesis_block(self.wallet.address, 500)
-			#self.create_transaction(self.wallet.address, 500, initial_transaction=True)
-			#self.add 
 			self.ring.append({'id': self.id, 
 							  'ip': self.ip, 
 							  'port': self.port, 
@@ -47,7 +45,8 @@ class node:
 
 	def create_new_block(self):
 		new_block, proof = self.mine_block()
-		self.broadcast(new_block)
+		print(proof)
+		self.broadcast_block(new_block)
 		return new_block
 
 	def create_transaction(self, recipient_address, amount, initial_transaction=False):
@@ -59,8 +58,6 @@ class node:
 													'amount': amount,
 													'recipient': recipient_address}]
 			self.wallet.UTXOs.extend(new_transaction.transaction_outputs)
-			self.add_transaction_to_block(new_transaction, self.blockchain.chain[-1])
-			self.broadcast_transaction(new_transaction)
 		else:
 			sent_amount = 0
 			transaction_inputs = []
@@ -78,7 +75,7 @@ class node:
 						break
 			
 			if flag:
-				new_transaction = Transaction(self.wallet.address, self.wallet.private_key, recipient_address, amount, transaction_inputs)
+				new_transaction = Transaction(self.wallet.address, recipient_address, amount, transaction_inputs)
 				new_transaction.transaction_outputs = [{'id':  uuid4().hex,
 														'transaction_id': new_transaction.transaction_id,
 														'amount': amount,
@@ -89,8 +86,6 @@ class node:
 														'recipient': self.wallet.address}]
 
 				self.wallet.UTXOs.extend(new_transaction.transaction_outputs)
-				self.add_transaction_to_block(new_transaction, self.blockchain.chain[-1])
-				self.broadcast_transaction(new_transaction)
 				return new_transaction
 			
 			else:
@@ -178,8 +173,8 @@ class node:
 
 #--------------------------------------MINING-----------------------------------------------------
 
-	def mine_block(self):    
-		new_block = Block(previous_hash = self.blockchain.chain[-1].hash, transactions = [])
+	def mine_block(self):   
+		new_block = Block(index = self.blockchain.chain[-1].index+1, previous_hash = self.blockchain.chain[-1].hash, transactions = [])
 		proof = self.proof_of_work(new_block)
 		return new_block, proof 
 
@@ -188,7 +183,7 @@ class node:
 		while proof[:difficulty] != "0"*difficulty:
 			block.nonce += 1
 			proof = block.myHash()
-			block.nonce = 0
+		block.nonce = 0
 		return proof
 
 #--------------------------------------CONSENSUS-----------------------------------------------------
