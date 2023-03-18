@@ -12,8 +12,6 @@ from transaction import Transaction
 from transactionIn import TransactionInput
 
 
-CAPACITY = 4
-DIFFICULTY = 2
 
 class Node:
 	def __init__(self):
@@ -30,6 +28,10 @@ class Node:
 		self.lock_block = Lock()
 		self.lock_chain = Lock()
 		self.lock_temp = Lock()
+
+		self.DIFFICULTY = None
+		self.CAPACITY = None
+		
 	
 	def create_new_block(self):
 		#if blockchain is empty then we create genesis block
@@ -158,7 +160,7 @@ class Node:
 			self.active_block = self.create_new_block()
 
 		self.lock_block.acquire()
-		if self.active_block.add_transaction(transaction,CAPACITY):
+		if self.active_block.add_transaction(transaction,self.CAPACITY):
 			self.to_check.append(deepcopy(self.active_block))
 			self.active_block = self.create_new_block()
 			self.lock_block.release()
@@ -182,7 +184,7 @@ class Node:
 		block.index = self.blockchain.chain[-1].index + 1
 		block.previousHash = self.blockchain.chain[-1].hash
 		current_hash = block.myHash()
-		while(current_hash.startswith('0'*DIFFICULTY) == False & self.mining_flag==False):
+		while(current_hash.startswith('0'*self.DIFFICULTY) == False & self.mining_flag==False):
 			block.nonce +=1
 			current_hash = block.myHash()
 		block.hash = current_hash
@@ -323,24 +325,29 @@ class Node:
 			
 			index = 0
 
-			while ((index + 1) * CAPACITY<= len(filter_tr)):
-				self.to_check[index].listOfTransactions = deepcopy(filter_tr[(index * CAPACITY):((index + 1) * CAPACITY)])
+			while ((index + 1) * self.CAPACITY<= len(filter_tr)):
+				self.to_check[index].listOfTransactions = deepcopy(filter_tr[(index * self.CAPACITY):((index + 1) * self.CAPACITY)])
 				index = index + 1
 
-			if (index * CAPACITY) < len(filter_tr):
-				self.active_block.listOfTransactions = deepcopy(filter_tr[(index * CAPACITY):])
+			if (index * self.CAPACITY) < len(filter_tr):
+				self.active_block.listOfTransactions = deepcopy(filter_tr[(index * self.CAPACITY):])
 
 			for item in range(len(self.to_check)-index):
 				self.to_check.pop()
 		return
 
+	#this function will be used from the bootstrap node in order to announce the final ring to the rest
 	def announce_ring(self,node):
-		address = 'http://' + node['ip'] + ':' + node['port']
-		requests.post(address + '/share_ring', data = json.dumps(self.ring))
+		if node.id != self.id:
+			payload = {"data":self.ring}
+			address = 'http://' + node['ip'] + ':' + node['port']
+			requests.post(address + '/learn_ring', json = payload)
 
+	#this function will be used initially to announce chain from the bootstrap node
 	def announce_chain(self,node):
-		address = 'http://' + node['ip'] + ':' + node['port']
-		requests.post(address + '/share_chain',data = json.dumps(self.blockchain.chain))
+		if node.id != self.id:
+			address = 'http://' + node['ip'] + ':' + node['port']
+			requests.post(address + '/share_chain',data = json.dumps(self.blockchain.chain))
 
 
 

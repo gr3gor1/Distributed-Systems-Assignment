@@ -79,5 +79,9 @@ node.mine_block(node.active_block)
 node.active_block.stringify()
 
 #need to test endpoints
+
+#initialize a node
+
+
 #need to test conflicts
 #need to test transactions
