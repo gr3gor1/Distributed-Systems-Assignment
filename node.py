@@ -1,5 +1,6 @@
 import requests
 import json
+import pickle
 from threading import Thread, Lock
 from copy import deepcopy
 import itertools
@@ -338,16 +339,16 @@ class Node:
 
 	#this function will be used to learn the final ring of the bootstrap node
 	def announce_ring(self,node):
-		if node.id != self.id:
+		if node['id'] != self.id:
 			payload = {"data":self.ring}
 			address = 'http://' + node['ip'] + ':' + node['port']
 			requests.post(address + '/learn_ring', json = payload)
 
-	#this function will be used initially to announce chain from the bootstrap node
+	#this function will be used to announce chain from the bootstrap node
 	def announce_chain(self,node):
-		if node.id != self.id:
+		if node['id'] != self.id:
 			address = 'http://' + node['ip'] + ':' + node['port']
-			requests.post(address + '/share_chain',data = json.dumps(self.blockchain.chain))
+			requests.post(address + '/learn_chain',data = pickle.dumps(self.blockchain.chain))
 
 
 

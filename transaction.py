@@ -20,7 +20,7 @@ class Transaction:
         #self.amount: το ποσό της συναλλαγής
         self.amount = value
         #self.transaction_id: το hash του transaction (hexadecimal format)
-        if (self.transaction_id):
+        if (transactionId):
             self.transaction_id = transactionId
         else:
             self.transaction_id = SHA.new((str(sender_address)+str(recipient_address)+str(value)).encode()).hexdigest()
@@ -29,6 +29,8 @@ class Transaction:
         #self.transaction_outputs: λίστα από Transaction Output
         if (transactionOut != None):
             self.create_out()
+        else:
+            self.transaction_outputs = transactionOut
         #self.signature
         self.signature = signature
         #sender id
