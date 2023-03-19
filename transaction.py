@@ -29,8 +29,6 @@ class Transaction:
         #self.transaction_outputs: λίστα από Transaction Output
         if (transactionOut != None):
             self.create_out()
-        else:
-            self.transaction_outputs = transactionOut
         #self.signature
         self.signature = signature
         #sender id
@@ -57,6 +55,7 @@ class Transaction:
         except (ValueError, TypeError):
             return False
 
+    #we create the two outputs on regarding the receiver and one regarding the sender
     def create_out(self):
         rec_out = transactionOut.TransactionOutput(self.transaction_id,self.receiver_address,self.amount)
         self.transaction_outputs = [rec_out]

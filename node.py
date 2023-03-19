@@ -336,7 +336,7 @@ class Node:
 				self.to_check.pop()
 		return
 
-	#this function will be used from the bootstrap node in order to announce the final ring to the rest
+	#this function will be used to learn the final ring of the bootstrap node
 	def announce_ring(self,node):
 		if node.id != self.id:
 			payload = {"data":self.ring}

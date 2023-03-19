@@ -8,7 +8,7 @@ import block
 import node
 import blockchain
 import wallet
-import transaction
+from transaction import Transaction
 import wallet
 from api import api,node
 
@@ -50,5 +50,36 @@ node.capacity = args.c
 node.difficulty = args.d
 
 #if this is not the bootstrap node
+if not boot:
+    address = 'http://' + boot_ip + ':' + boot_port + '/registration'
+    body = {'ip':ip,'port':5000,'pub':node.wallet.public_key}
+    res = requests.post(address,data=body)
 
-app.run(host='127.0.0.1', port=port)
+    if res.status_code == 200:
+        print("Successfully initialized")
+        print("ID: "+ node.id)
+
+#if it is the bootstrap node
+else:
+    #set the id to 0 initialize the ring
+    node.id = 0
+    node.register_node_to_ring(ip,node.id,port,node.wallet.public_key,api.peers*100)
+
+    #create the genesis block using .create_new_block with blockchain.chain being empty
+    genesis = node.create_new_block()
+    genesis.nonce = 0
+
+    #create the transaction of giving N*100 coins to the bootstrap node from 0 address
+    transaction = Transaction(sender_address='0',sender_id='0',receiver_address=node.wallet.public_key,recipient_id=node.id,value=100*api.peers,NBCs=100*api.peers,transactionIn=None)
+    #add the transaction in the genesis block
+    genesis.add_transaction(transaction)
+    #add the transaction in the wallet of the node
+    node.wallet.transactions.append(transaction)
+    #create the hash of the block
+    genesis.hash = genesis.myHash()
+    #add genesis block (current active block) in the chain
+    node.blockchain.chain.add_block(node.active_block)
+    #set the active block of bootstrap node to blank so that we can continue
+    node.active_block = None
+
+app.run(host=ip,port=port)

@@ -35,13 +35,11 @@ def registration():
             node.announce_chain(peer)
             if peer.id != node.id:
                 node.create_transaction(peer.id,peer.pub,100)
-        res = jsonify('All nodes are now initialized')
-    else:
-        res = jsonify("Initialized node "+id)
+        res = jsonify(peer.id)
 
     return res
 
-#share the ring of the bootstrap node and set the id of the node
+#learn the ring of the bootstrap node and set the id of the node
 @api.route('/learn_ring',methods = ['POST'])
 
 def learn_ring():
