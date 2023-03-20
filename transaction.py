@@ -33,8 +33,8 @@ class Transaction:
         transaction_dict['value'] = self.amount
         transaction_dict['transaction_id'] = self.transaction_id
         transaction_dict['transaction_inputs'] = self.transaction_inputs
-        transaction_dict['transaction_outputs'] = self.transaction_outputs
-        transaction_dict['signature'] = self.signature
+        #transaction_dict['transaction_outputs'] = self.transaction_outputs
+        #transaction_dict['signature'] = self.signature
         return transaction_dict
         
 
@@ -45,11 +45,3 @@ class Transaction:
         hash_obj = self.to_dict()
         hash_obj = SHA.new(str(hash_obj).encode('utf8'))
         self.signature = binascii.hexlify(signer.sign(hash_obj)).decode('ascii')
-
-    def verify_signature(self, public_key):
-        # Load public key and verify message
-        hash_obj = self.to_dict()
-        hash_obj = SHA.new(str(hash_obj).encode())
-        public_key = RSA.importKey(binascii.unhexlify(public_key))
-        verifier = PKCS1_v1_5.new(public_key)
-        return verifier.verify(hash_obj, binascii.unhexlify(self.signature))

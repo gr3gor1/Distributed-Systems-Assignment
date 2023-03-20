@@ -7,6 +7,10 @@ from uuid import uuid4
 import threading
 import pickle
 from datetime import datetime
+from Crypto.Hash import SHA
+from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
+import binascii
 
 CAPACITY = 1
 MINING_DIFFICULTY = 4
@@ -14,13 +18,14 @@ MINING_DIFFICULTY = 4
 headers={'Content-type':'application/json','Accept':'text/plain'}
 
 class node:
-	def __init__(self, id, bootstrap, ip, port, blockchain):
+	def __init__(self, id, bootstrap, ip, port, blockchain, total_nodes):
 		
 		self.id = id
 		self.bootstrap = bootstrap
 		self.ip = ip
 		self.port = port 
 		self.blockchain = blockchain
+		self.total_nodes = total_nodes
 		self.wallet = wallet()
 		self.ring = []   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 		if self.bootstrap == 1:
@@ -64,18 +69,19 @@ class node:
 			sent_amount = 0
 			transaction_inputs = []
 			flag = False
+			to_be_spent = []
+			not_to_be_spent = []
 			for i, utxo in enumerate(self.wallet.UTXOs):
 				if utxo['recipient'] == self.wallet.address:
+					to_be_spent.append(self.wallet.UTXOs[i])
 					sent_amount += utxo['amount']
 					transaction_inputs.append(utxo['id'])
 					if sent_amount >= amount:
-						try:
-							self.wallet.UTXOs = self.wallet.UTXOs[i+1:]
-						except:
-							self.wallet.UTXOs = []
 						flag = True
 						break
-			
+				else:
+					not_to_be_spent.append(self.wallet.UTXOs[i])
+
 			if flag:
 				new_transaction = Transaction(self.wallet.address, recipient_address, amount, transaction_inputs)
 				new_transaction.transaction_outputs = [{'id':  uuid4().hex,
@@ -87,6 +93,7 @@ class node:
 														'amount': sent_amount-amount,
 														'recipient': self.wallet.address}]
 
+				self.wallet.UTXOs = not_to_be_spent.copy()
 				self.wallet.UTXOs.extend(new_transaction.transaction_outputs)
 				return new_transaction
 			
@@ -115,12 +122,6 @@ class node:
 		else:
 			block.add_transaction(transaction)
 
-		print('Length of blockchain: ', len(self.blockchain.chain))
-		for i, block in enumerate(self.blockchain.chain):
-			print('Block {}:'.format(i))
-			print('Previous hash:', block.previous_hash)
-			print('Current hash:', block.hash)
-
 #--------------------------------------BROADCASTS-----------------------------------------------------
 
 	def broadcast_transaction(self, transaction):
@@ -141,7 +142,6 @@ class node:
 				if response.status_code != 200:
 					return False
 		return True
-
 
 	def broadcast_ring(self):
 		for node in self.ring:
@@ -166,6 +166,14 @@ class node:
 	def validate_transaction(self, transaction):
 		#use of signature and NBCs balance
 		return transaction.verify_transaction(transaction.sender_address)
+
+	def verify_signature(self, public_key, transaction):
+        # Load public key and verify message
+		hash_obj = transaction.to_dict()
+		hash_obj = SHA.new(str(hash_obj).encode())
+		public_key = RSA.importKey(binascii.unhexlify(public_key))
+		verifier = PKCS1_v1_5.new(public_key)
+		return verifier.verify(hash_obj, binascii.unhexlify(transaction.signature))
 
 	def valid_proof(self, proof, difficulty=MINING_DIFFICULTY):
 		return proof[:difficulty] == difficulty*'0'
