@@ -71,7 +71,7 @@ class node:
 
 		self.ring.append(ring)
 		self.public_key_list.append(public_key)
-		time.sleep(1)
+		#time.sleep(1)
 		self.seen += 1
 		if (self.seen == self.participants):
 			print("All in")
@@ -81,17 +81,21 @@ class node:
 
 	def send_the_ring(self):
 		self.child.wait()
+		
+		time.sleep(2)
 		for i, ring in enumerate(self.ring[1:]):
 			self.send(i+1, ring)
-		
-		time.sleep(3)
+		time.sleep(2)
+		#time.sleep(3)
 
-		self.chain.get_addresses(self.ring)
-  
+		self.chain.get_addresses(self.ring,self.ip,self.port)
+	
+		self.wallet_dict={}
+   
+		for public_key in self.public_key_list:
+			self.wallet_dict[public_key] = []
+   
 		for i, ring in enumerate(self.ring[1:]):
-			self.wallet_dict={}
-			for public_key in self.public_key_list:
-				self.wallet_dict[public_key] = []
 			if  not no_mine.isSet():
 				no_mine.wait()
 			self.send_transactions(i+1,self.public_key_list[i+1])
@@ -101,7 +105,7 @@ class node:
   
 	def send(self, identity,ring):
 		print("Bootstrap send to Node with identity {}".format(identity))
-		time.sleep(3)
+		#time.sleep(3)
 		data = {
             'id': identity,
             'ring': self.ring,
@@ -120,7 +124,7 @@ class node:
 		else:
 			print("i am not this child")
 		self.ring = copy.deepcopy(ring)
-		self.chain.get_addresses(self.ring)
+		self.chain.get_addresses(self.ring,self.ip,self.port)
 		self.public_key_list = copy.deepcopy(pub)
   
 		self.wallet_dict={}
@@ -185,28 +189,50 @@ class node:
 			
 			self.wallet.UTXOs.extend(new_transaction.transaction_outputs)
 			self.wallet_dict[receiver_address].append(new_transaction.transaction_outputs[0])
-			new_transaction.Signature = new_transaction.sign_transaction(self.wallet.private_key)
-		
+			new_transaction.Signature = new_transaction.sign_transaction(self.wallet.private_key,new_transaction)
+   
+
 			self.broadcast_transaction(new_transaction)
-			self.chain.add_transaction(new_transaction)
+			new_block=self.chain.add_transaction(new_transaction)
+
    		
-			return new_transaction
+			return new_block
 		
 		else:
 			print("Invalid transaction (balance is not enough)")
+			return False
+
+	def validate_tran(self,tran):
+		val_tran=Transaction(tran["sender"], tran["receiver"], tran["value"],tran["inputs"])
+
+		val_tran.transaction_outputs = tran["outputs"]
+		val_tran.Signature = tran["signature"]
+		val_tran.transaction_id=tran["tran_id"]
+		if (val_tran.verify_signature(val_tran.sender_address,tran["signature"],val_tran)==True):
+			print("verify -> ok")
+
+			self.wallet.UTXOs.extend(val_tran.transaction_outputs)
+			self.wallet.transactions.append(val_tran)
+			self.chain.add_transaction(val_tran)
+   		
+			return True 
+		else:	
+			print("verify -> not ok")
 			return False
 
 
 #--------------------------------------BROADCASTS-----------------------------------------------------
 
 	def broadcast_transaction(self, transaction):
+		data=json.dumps(transaction.transaction_to_json())
 		for rin in self.ring:
 			address = rin + '/broadcast/transaction'
 			if rin != ("http://" + str(self.ip) + ":"+ str(self.port)):
-				response = requests.post(address, data=pickle.dumps(transaction))
+				response = requests.post(address, data=data,headers=headers)
 				if response.status_code != 200:
 					return False
 		return True
+
  
  
 	'''def create_transaction(sender, receiver, signature):

@@ -3,7 +3,11 @@ from transaction import Transaction
 import threading
 import time
 import copy
+import requests
+import pickle
+import node 
 
+headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 CAPACITY=2
 
 class Blockchain:
@@ -17,9 +21,10 @@ class Blockchain:
 
 ## theloume na paroume to ring me oles tis addresses gia na mporoume na stelnoume pantou ##
 
-    def get_addresses(self, addresses):
-        #print("aaaaaaaaaaaaaaaaaaaaaaaaa")
+    def get_addresses(self, addresses,ip,port):
         self.ring = copy.deepcopy(addresses)
+        self.ip=ip
+        self.port=port
         return
     
  ### otan orizoume ton bootstrap ftiaxetai to genesis kai bazei kai ena transaction mesa ##   
@@ -50,28 +55,49 @@ class Blockchain:
         self.list_transactions.append(transaction.to_dict())
         #print(len(self.list_transactions))
         if(len(self.list_transactions)==CAPACITY):
+            node.no_mine.clear()
             previous_hash = self.list_blocks[-1].cur_hash
             new_block = Block(len(self.list_blocks),self.list_transactions,previous_hash)
             self.list_transactions = []
             self.mine.clear()
             miner = threading.Thread(name = 'miner', target = self.lets_mine, args = (new_block, ))
             miner.start()
-            return
+            return 
             
     def lets_mine(self,block):
         print("start mining")
         strart_mine_time = time.time()
         block.mine_block(self.mine)
-        if (not self.mine.isSet()):
+        time.sleep(1)
+        #print(self.mine.isSet())
+        if ( self.mine.isSet()==False):
             self.list_blocks.append(block)
             print('Mined block')
-            message = {
-                        'last_block': self.list_blocks[-1].print_contents() # to JSON
-                    }
+            node.no_mine.set()
+            for rin in self.ring :
+                if rin != ("http://" + str(self.ip) + ":"+ str(self.port)):
+                    message = {
+                                'last_block': self.list_blocks[-1].print_contents() # to JSON
+                            }
+                    print("sending a block to everyone")
+                    node.no_mine.set()
+                    
+                    self.broadcast_block(rin, self.list_blocks[-1])
+        else:   
+            print("someone find it")
         return
     
-
+    def broadcast_block(self, address,block):
+        response = requests.post(address+'/broadcast/block', data=pickle.dumps(block))
+        #print("something")
+        if response.status_code != 200:
+            return False
+        return True
     
+    
+    def add_block(self, block):
+        self.list_blocks.append(block)
+        
     def output (self):
         outlist = []
         for bl in self.list_blocks:

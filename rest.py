@@ -59,11 +59,24 @@ def register_child():
 
 @app.route('/broadcast/transaction', methods=['POST'])
 def get_transaction():
+    #data = pickle.loads(request.get_data())
+    data = json.loads(request.get_json())
+    if not no_mine.is_set():
+        no_mine.wait()
+    master.validate_tran(data)
+    #print(master.wallet.mybalance())
+    return jsonify({"Broadcast": "Done"}), 200
+
+@app.route('/broadcast/block', methods=['POST'])
+def get_block():
+    #values = request.get_json()
+    #last_block = values['last_block'] 
     data = pickle.loads(request.get_data())
-    master.chain.add_transaction(data)
-    master.wallet.UTXOs.extend(data.transaction_outputs)
-    #master.wallet.transactions.extend(data[0])
-    print(master.wallet.mybalance())
+    print("someone send a block")
+    master.chain.mine.set()
+    no_mine.set()
+    data = pickle.loads(request.get_data())
+    #master.chain.add_block(data)
     return jsonify({"Broadcast": "Done"}), 200
         
 

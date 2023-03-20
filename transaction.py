@@ -34,7 +34,7 @@ class Transaction:
         'receiver': self.receiver_address, 
         'value': self.value, 
         'inputs' : self.transaction_inputs, 
-        'outputs' : self.transaction_outputs,
+        'outputs' : self.transaction_outputs
         }
         string = json.dumps(transaction, sort_keys=True).encode()
         return hashlib.sha256(string).hexdigest()
@@ -46,7 +46,8 @@ class Transaction:
 		    'value' : self.value, 
             'inputs' : self.transaction_inputs, 
             'outputs' : self.transaction_outputs,
-            'signature' : self.Signature
+            'signature' : self.Signature,
+            'tran_id':self.transaction_id
         }
         string = json.dumps(transaction, sort_keys=True)
         return string 
@@ -71,32 +72,32 @@ class Transaction:
         transaction_dict['value'] = self.value
         transaction_dict['transaction_id'] = self.transaction_id
         transaction_dict['transaction_inputs'] = self.transaction_inputs
-        transaction_dict['transaction_outputs'] = self.transaction_outputs
+        #transaction_dict['transaction_outputs'] = self.transaction_outputs
         return transaction_dict
         
         
 
-    def sign_transaction(self,sender_private_key):
+    def sign_transaction(self,sender_private_key,t):
         """
         Sign transaction with private key
         """
+    
         private_key = RSA.importKey(binascii.unhexlify(sender_private_key))
         signer = PKCS1_v1_5.new(private_key)
         
-        hash_obj = self.to_dict2()
+        hash_obj = t.to_dict2()
         hash_obj = SHA.new(str(hash_obj).encode('utf8'))
-        print(hash_obj)
+        
         return binascii.hexlify(signer.sign(hash_obj)).decode('ascii')
        
-    def verify_signature(self,public_key):
+    def verify_signature(self,public_key,sing,t):
         # Load public key and verify message
-
-        hash_obj = self.to_dict2()
-        hash_obj = SHA.new(str(hash_obj).encode())
-        
         public_key = RSA.importKey(binascii.unhexlify(public_key))
         verifier = PKCS1_v1_5.new(public_key)
+        
+        hash_obj = t.to_dict2()
+        hash_obj = SHA.new(str(hash_obj).encode('utf8'))
 
-        verify = verifier.verify(hash_obj,  binascii.unhexlify(self.Signature))
+        verify = verifier.verify(hash_obj,  binascii.unhexlify(sing))
         
         return verify

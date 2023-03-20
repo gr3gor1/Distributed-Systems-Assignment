@@ -2,7 +2,9 @@ import time
 from hashlib import sha256
 import json
 
-MINING_DIFFICULTY=1
+
+MINING_DIFFICULTY=2
+
 
 class Block:
 	def __init__(self,index,transactions,previous_hash, nonce=0,timestamp=time.time()):
@@ -35,6 +37,7 @@ class Block:
 	def mine_block(self,event):
 		while self.valid_proof() is False and not event.isSet():
 			self.nonce += 1
+			print('mining...')
 		self.cur_hash = self.myHash()
 		return self
 
@@ -71,3 +74,5 @@ class Block:
 		previous_hash = self.previous_hash
 		), sort_keys = True)
 		return(result)
+
+
