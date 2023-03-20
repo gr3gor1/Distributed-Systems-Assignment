@@ -199,7 +199,7 @@ class Node:
 
 		def dummy(peer,res):
 			address = 'http://' + peer['ip'] + ":" + peer['port']
-			response = requests.post(address + '/broadcast_block',data=pickle.dumps(block))
+			response = requests.post(address + '/check_block',data=pickle.dumps(block))
 			res.append(response.status_code)
 
 		to_close = []

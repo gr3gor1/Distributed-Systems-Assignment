@@ -75,12 +75,48 @@ def valid_transaction():
 #we make known that this valid transaction should be added in the local node
 @api.route('/add_transaction',methods=['POST'])
 def add_transaction():
-    
-    pass
+    transaction = pickle.loads(request.get_data())
+    node.add_transaction_to_block(transaction)
+    return jsonify({'status':'OK'}), 200
 
-@api.route('/broadcast_block',methods = ['POST'])
+@api.route('/check_block',methods = ['POST'])
 def broadcast_block():
-    pass
+    block = pickle.loads(request.get_data()):
+    #make sure the chain is not in danger of being changed during the procedure
+    node.lock_chain.acquire()
+    if node.validate_block(block):
+        #make sure mining is stopped
+        node.mining_flag = True 
+        with node.lock_temp : 
+            node.blockchain.add_block(block)
+            node.lock_chain.release()
+            #clean double transactions
+            node.check_doubles(block)
+            #we can start mining again
+            node.mining_flag = False
+            return jsonify({'status':"SUCCESS"}), 200
+
+    else:
+        #check the validity of the block
+        if block.previousHash == node.blockchain.chain[-1].hash:
+            node.lock_chain.release()
+            return jsonify({'status':'FAILED VALIDATION'}), 400
+        else:
+           #there has been some confilct that needs fixing
+            if node.resolve_conflicts(block):
+               #if resolved stop minining and add block to the chain
+                node.mining_flag = True
+                with node.lock_temp:
+                    node.blockchain.add_block(block)
+                    node.lock_chain.release()
+                    #check double transactions
+                    node.check_doubles(block)
+                    #continue mining
+                    node.mining_flag = False
+                    return jsonify({'status':'SUCCESS'}), 200
+            else:
+                node.lock_chain.release()
+                return jsonify({'status':'REJECTED'}), 400
 
 
 
