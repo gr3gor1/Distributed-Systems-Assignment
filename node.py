@@ -99,20 +99,20 @@ class Node:
 			return True
 	
 	def broadcast_transaction(self,transaction):
-	#we will create a function and then we will create N threads
-	#and then we will hit the same endpoint on each node in the network
-	#at first we seek validation of th transaction
+	#we create N threads and almost simultaneously make the 
+	#same request ont the same endpoint of each node in the network
+	#at first we seek validation of the transaction
 		def dummy(peer,res,endpoint):
 			if peer['id'] != self.id:
 				address = "http://" + peer['ip'] + ":" + peer['port']
-				response = requests.post(address + endpoint,data=json.dumps(transaction.stringify()))
+				response = requests.post(address + endpoint,data=pickle.dumps(transaction))
 				res.append(response.status_code)
 
 		to_close = []
 		ans = []
 
 		for peer in self.ring:
-			thread = Thread(target=dummy, args=(peer,ans,'/broadcast_transaction'))
+			thread = Thread(target=dummy, args=(peer,ans,'/valid_transaction'))
 			to_close.append(thread)
 			thread.start()
 
@@ -121,7 +121,8 @@ class Node:
 			if ans[i] != 200:
 				return False
 			
-		#secondly after validation we need to add it in the block	
+		#secondly after validation we need to add it in the block and this has
+		#to be something that everyone in the network will do too	
 		to_close = []
 		ans = []
 
@@ -198,7 +199,7 @@ class Node:
 
 		def dummy(peer,res):
 			address = 'http://' + peer['ip'] + ":" + peer['port']
-			response = requests.post(address + '/broadcast_block',data=json.dumps(block))
+			response = requests.post(address + '/broadcast_block',data=pickle.dumps(block))
 			res.append(response.status_code)
 
 		to_close = []
@@ -258,8 +259,8 @@ class Node:
 		#after broadcasts to concentrate all the chains we validate the incoming chains and then decide to stick with the longest one
 		def dummy(peer,blockchains):
 			address = "http://" + peer['ip'] + ':' + peer['port']
-			response = requests.get(address + '/broadcast_chain')
-			blockchain = json.dumps(response._content)
+			response = requests.get(address + '/conflict_chain')
+			blockchain = pickle.dumps(response._content)
 			blockchains.append(blockchain)
 
 		threads = []

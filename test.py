@@ -4,6 +4,17 @@ from wallet import Wallet
 from transaction import Transaction
 from node import Node
 
+import Crypto
+import Crypto.Random
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
+
+import hashlib
+import json
+from time import time
+import binascii
+
 #test block class
 
 #create block
@@ -78,10 +89,22 @@ node.mine_block(node.active_block)
 #check the block contents
 node.active_block.stringify()
 
-#need to test endpoints
+#test transaction
 
-#initialize a node
-
-
-#need to test conflicts
-#need to test transactions
+#create pair of keys 1
+random1 = RSA.generate(1024)
+private_key1 = binascii.hexlify(random1.exportKey()).decode()
+public_key1 = hashlib.sha256(random1.publickey().exportKey(format='DER')).digest().hex()
+#create pair of keys 2
+random2 = RSA.generate(1024)
+private_key2 = binascii.hexlify(random1.exportKey()).decode()
+public_key2 = hashlib.sha256(random2.publickey().exportKey(format='DER')).digest().hex()
+#check that the keys are not the same
+print(private_key1 == private_key2)
+#create transaction from 1 to 2
+a = Transaction()
+#let 1 sign transaction
+a.sign_transaction(private_key1)
+#let 2 verify transaction with 
+print(a.validate_transaction())
+#test endpoints
