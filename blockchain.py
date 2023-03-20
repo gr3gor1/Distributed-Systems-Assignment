@@ -6,6 +6,7 @@ import copy
 import requests
 import pickle
 import node 
+import json
 
 headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 CAPACITY=2
@@ -33,9 +34,10 @@ class Blockchain:
         money = 100 * (participants + 1)
         genesis_block = Block(len(self.list_blocks),[],'0')
         trans = Transaction('0', address, money, [])
-        self.list_transactions.append(trans)
+        self.list_transactions.append(trans.transaction_to_json())
         genesis_block.add_transaction(trans.to_dict())
         genesis_block.cur_hash = genesis_block.myHash()
+        #print(genesis_block.cur_hash)
         self.list_blocks.append(genesis_block)
         print("genesis_block")
         return
@@ -56,7 +58,9 @@ class Blockchain:
         #print(len(self.list_transactions))
         if(len(self.list_transactions)==CAPACITY):
             node.no_mine.clear()
-            previous_hash = self.list_blocks[-1].cur_hash
+            #print(len(self.list_blocks))
+            #print(self.list_blocks[-1].myHash())
+            previous_hash = self.list_blocks[-1].myHash()
             new_block = Block(len(self.list_blocks),self.list_transactions,previous_hash)
             self.list_transactions = []
             self.mine.clear()
@@ -76,19 +80,19 @@ class Blockchain:
             node.no_mine.set()
             for rin in self.ring :
                 if rin != ("http://" + str(self.ip) + ":"+ str(self.port)):
-                    message = {
-                                'last_block': self.list_blocks[-1].print_contents() # to JSON
-                            }
+                    message =  self.list_blocks[-1].block_to_json() # to JSON
+                            
+                    #print(message)
                     print("sending a block to everyone")
                     node.no_mine.set()
                     
-                    self.broadcast_block(rin, self.list_blocks[-1])
+                    self.broadcast_block(rin, message)
         else:   
             print("someone find it")
         return
     
     def broadcast_block(self, address,block):
-        response = requests.post(address+'/broadcast/block', data=pickle.dumps(block))
+        response = requests.post(address+'/broadcast/block', data=json.dumps(block),headers=headers)
         #print("something")
         if response.status_code != 200:
             return False

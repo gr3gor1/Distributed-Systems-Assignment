@@ -69,13 +69,14 @@ def get_transaction():
 
 @app.route('/broadcast/block', methods=['POST'])
 def get_block():
-    #values = request.get_json()
-    #last_block = values['last_block'] 
-    data = pickle.loads(request.get_data())
+    data = request.get_json()
+    #data = pickle.loads(request.get_data())
     print("someone send a block")
+    #print(data)
     master.chain.mine.set()
+    master.validate_block(data)
+    #master.chain.mine.set()
     no_mine.set()
-    data = pickle.loads(request.get_data())
     #master.chain.add_block(data)
     return jsonify({"Broadcast": "Done"}), 200
         

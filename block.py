@@ -3,7 +3,7 @@ from hashlib import sha256
 import json
 
 
-MINING_DIFFICULTY=2
+MINING_DIFFICULTY=3
 
 
 class Block:
@@ -18,7 +18,7 @@ class Block:
  ## xasaroume to block ###
  
 	def myHash(self):
-		block_contents = str(self.index)+str(self.timestamp) + str(self.listOftransactions) + str(self.previous_hash) + str(self.nonce)
+		block_contents = str(self.index)+str(self.timestamp) + str(self.previous_hash) + str(self.nonce)
 		block_hash = sha256(block_contents.encode())
 		return block_hash.hexdigest()
 
@@ -48,6 +48,7 @@ class Block:
 ### theloume to block se json ####
 
 	def print_contents(self):
+		self.myHash()
 		content={
 		"index": self.index,
 		"timestamp":self.timestamp,
@@ -61,10 +62,11 @@ class Block:
 		print("index", self.index)
 		print("timestamp",self.timestamp)
 		print("transactions:", self.listOftransactions)
-		print("current hash:", self.hash)
+		print("current hash:", self.myHash())
 		print("previous hash:", self.previous_hash)
 
 	def block_to_json(self):
+		#self.myHash()
 		result = json.dumps(dict(
       	index = self.index,
 		timestamp = self.timestamp.__str__(),

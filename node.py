@@ -132,6 +132,7 @@ class node:
 			self.wallet_dict[public_key] = []
 		
 		genesis = json.loads(genesis)
+		#print(genesis)
 		new_index=genesis['index']
 		new_trans=genesis['transactions']
 		new_pre=genesis['previous_hash']
@@ -158,7 +159,8 @@ class node:
 		self.create_transaction(self.public_key_list[0],receiver_address,100)
 		print("Boss balance", self.wallet.mybalance())
    
-	
+#--------------------------------------TRANSACTIONS----------------------------------------
+ 
 	def create_transaction(self, sender,receiver_address, value):
 		#remember to broadcast it
 		sent_value = 0
@@ -193,14 +195,27 @@ class node:
    
 
 			self.broadcast_transaction(new_transaction)
-			new_block=self.chain.add_transaction(new_transaction)
+			self.chain.add_transaction(new_transaction)
 
    		
-			return new_block
+			return 
 		
 		else:
 			print("Invalid transaction (balance is not enough)")
 			return False
+
+#--------------------------------------BROADCASTS-----------------------------------------------------
+
+	def broadcast_transaction(self, transaction):
+		data=json.dumps(transaction.transaction_to_json())
+		for rin in self.ring:
+			address = rin + '/broadcast/transaction'
+			if rin != ("http://" + str(self.ip) + ":"+ str(self.port)):
+				response = requests.post(address, data=data,headers=headers)
+				if response.status_code != 200:
+					return False
+		return True
+#--------------------------------------VALIDATIONS-----------------------------------------------------
 
 	def validate_tran(self,tran):
 		val_tran=Transaction(tran["sender"], tran["receiver"], tran["value"],tran["inputs"])
@@ -220,20 +235,60 @@ class node:
 			print("verify -> not ok")
 			return False
 
+	def validate_block(self,block):
+		block = json.loads(block)
+		print(block['previous_hash'])
+		if  block['previous_hash'] != self.chain.list_blocks[-1].myHash():
+			#print(11111)
+			return False
+		else:
+			new_block = Block(block['index'],block['transactions'],block['previous_hash'])
+			new_block.timestamp = block['timestamp']
+			new_block.nonce=block['nonce']
+			if new_block.myHash()==(block['cur_hash']):
+				self.chain.mine.set()
+				print(2)
+				self.chain.add_block(new_block)
+				return True
+			else:
+				return False
 
-#--------------------------------------BROADCASTS-----------------------------------------------------
+#--------------------------------------CONSENSUS-----------------------------------------------------
+	def valid_chain(self):
+		#check for the longer chain across all nodes
+		chains = []
+		for node in self.ring:
+			if node['id'] != self.id:
+				address = 'http://' + node['ip'] + ':' + node['port']
+				response = requests.get(address + "/send_chain")
+				chains.append(response._content)
+		
+		max_length = 0
+		for chain in chains:
+			if len(chain) > max_length:
+				max_length = len(chain)
+				longer_chain = chain
+		
+		return longer_chain
 
-	def broadcast_transaction(self, transaction):
-		data=json.dumps(transaction.transaction_to_json())
-		for rin in self.ring:
-			address = rin + '/broadcast/transaction'
-			if rin != ("http://" + str(self.ip) + ":"+ str(self.port)):
-				response = requests.post(address, data=data,headers=headers)
+	def resolve_conflicts(self):
+		#resolve correct chain
+		valid_chain = self.valid_chain()
+		for node in self.ring:
+			if node['id'] != self.id:
+				address = 'http://' + node['ip'] + ':' + node['port']
+				response = requests.post(address + "/send_chain", data=json.dumps(valid_chain))
 				if response.status_code != 200:
 					return False
 		return True
 
- 
+#--------------------------------------VIEWS-----------------------------------------------------
+
+	def view_transactions(self):
+		return self.chain.list_blocks[-1].listOftransactions
+
+	def view_balance(self):
+		return self.wallet.mybalance()
  
 	'''def create_transaction(sender, receiver, signature):
 		#remember to broadcast it
