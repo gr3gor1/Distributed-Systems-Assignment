@@ -6,9 +6,10 @@ import json
 from uuid import uuid4
 import threading
 import pickle
+from datetime import datetime
 
 CAPACITY = 1
-MINING_DIFFICULTY = 2
+MINING_DIFFICULTY = 4
 
 headers={'Content-type':'application/json','Accept':'text/plain'}
 
@@ -29,8 +30,8 @@ class node:
 							  'port': self.port, 
 							  'public_key': self.wallet.public_key})
 		else:
-			child = threading.Thread(target = self.share_node_info)
-			child.start()
+			thread = threading.Thread(target = self.share_node_info)
+			thread.start()
 
 	def share_node_info(self):
 		data = {'id': self.id, 
@@ -44,8 +45,9 @@ class node:
 #--------------------------------------NEW BLOCKS/TRANSACTIONS----------------------------------------
 
 	def create_new_block(self):
-		new_block, proof = self.mine_block()
-		self.broadcast_block(new_block)
+		new_block = self.mine_block()
+		if new_block.confirmed:
+			self.broadcast_block(new_block)
 		return new_block
 
 	def create_transaction(self, recipient_address, amount, initial_transaction=False):
@@ -107,9 +109,17 @@ class node:
 		#if enough transactions  mine
 		if len(block.transactions) == CAPACITY:
 			new_block = self.create_new_block()
-			new_block.add_transaction(transaction)
+			if new_block.confirmed:
+				self.blockchain.add_block(new_block)
+				new_block.add_transaction(transaction)
 		else:
 			block.add_transaction(transaction)
+
+		print('Length of blockchain: ', len(self.blockchain.chain))
+		for i, block in enumerate(self.blockchain.chain):
+			print('Block {}:'.format(i))
+			print('Previous hash:', block.previous_hash)
+			print('Current hash:', block.hash)
 
 #--------------------------------------BROADCASTS-----------------------------------------------------
 
@@ -123,6 +133,7 @@ class node:
 		return True
 	
 	def broadcast_block(self, block):
+		print('broadcasting mined block...')
 		for node in self.ring:
 			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/block'
 			if node['id'] != self.id:
@@ -175,14 +186,21 @@ class node:
 
 	def mine_block(self):   
 		new_block = Block(index = self.blockchain.chain[-1].index+1, previous_hash = self.blockchain.chain[-1].hash, transactions = [])
-		proof = self.proof_of_work(new_block)
-		return new_block, proof 
+		#miner = threading.Thread(target=self.proof_of_work(new_block))#, args=[new_block])
+		self.proof_of_work(new_block)
+		return new_block
 
 	def proof_of_work(self, block, difficulty=MINING_DIFFICULTY):
 		proof = block.myHash()
-		while proof[:difficulty] != "0"*difficulty:
+		chain = len(self.blockchain.chain)
+		print('started mining:', block.nonce, datetime.now())
+		while proof[:difficulty] != "0"*difficulty and len(self.blockchain.chain) == chain:
 			block.nonce += 1
 			proof = block.myHash()
+		print('stopped mining:', block.nonce, datetime.now(), proof)
+		block.hash = proof
+		if self.valid_proof(proof):
+			block.confirmed = True
 		block.nonce = 0
 		return proof
 

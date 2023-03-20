@@ -12,6 +12,7 @@ from transaction import Transaction
 import json  
 import pickle   
 import threading
+from datetime import datetime 
 
 
 ### JUST A BASIC EXAMPLE OF A REST API WITH FLASK
@@ -69,8 +70,14 @@ def get_info():
             for node in node_.ring:
                 if node['id'] != node_.id:
                     new_transaction = node_.create_transaction(node['public_key'], 100)
-                    node_.broadcast_transaction(new_transaction)
+                    thread = threading.Thread(target = node_.broadcast_transaction, args=(new_transaction,))
+                    thread.start()
                     node_.add_transaction_to_block(new_transaction, node_.blockchain.chain[-1])
+
+            #print(len(node_.blockchain.chain), node_.blockchain.chain[-1].hash)
+
+            #print(len(node_.blockchain.chain))
+            #print(node_.blockchain.chain[-1].hash)
 
         return jsonify(data), 200
     else:
@@ -80,12 +87,14 @@ def get_info():
 
 @app.route('/broadcast/ring', methods=['POST'])
 def get_ring():
-    data = request.get_json()
-    if node_.broadcast_ring():
-        print('Ring broadcasted')
+    data = json.loads(request.get_data())
+    if data != None:
+        node_.ring = data
+        print('Got the ring!')
+        return jsonify({"Broadcast": "Done"}), 200
     else:
         print('Failed to broadcast the ring.')
-    return jsonify({"Broadcast": "Done"}), 200
+        return jsonify({"Broadcast": "Failed"}), 400
 
 #broadcast transaction        
    
@@ -100,8 +109,10 @@ def get_transaction():
    
 @app.route('/broadcast/block', methods=['POST'])
 def get_block():
+    print('block broadcasted:', datetime.now())
     data = pickle.loads(request.get_data())
     node_.blockchain.add_block(data)
+    #print(len(node_.blockchain.chain), node_.blockchain.chain[-1].hash)
     return jsonify({"Broadcast": "Done"}), 200
 
 #broadcast chain        
@@ -149,4 +160,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     node_ = node(args.id, args.bootstrap, args.ip, args.port, blockchain)
-    app.run(host=args.ip, port=args.port, debug=True, use_reloader=False)
+    thread = threading.Thread(target=app.run(host=args.ip, port=args.port, debug=True, use_reloader=False))
+    thread.start()
+    #app.run(host=args.ip, port=args.port, debug=True, use_reloader=False)
