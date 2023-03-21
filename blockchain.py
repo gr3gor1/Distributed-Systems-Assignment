@@ -9,7 +9,7 @@ import node
 import json
 
 headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-CAPACITY=2
+CAPACITY=3
 
 class Blockchain:
     def __init__(self):
@@ -55,7 +55,7 @@ class Blockchain:
     def add_transaction(self,transaction):
         print("new transaction")
         self.list_transactions.append(transaction.to_dict())
-        #print(len(self.list_transactions))
+        print(len(self.list_transactions))
         if(len(self.list_transactions)==CAPACITY):
             node.no_mine.clear()
             #print(len(self.list_blocks))
