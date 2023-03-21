@@ -80,7 +80,7 @@ def application():
         if action[0] == 'Help':
             print("\n* Creating a new transaction will require from you to set a receiver and the amount to be sent.")
             print("\n* Viewing the last transactions will present to you the transactions of the latest block in the chain.")
-            print("\n* Choosing the show wallet balance option will print how much coins are left in the wallet of the node.")
+            print("\n* Choosing the show wallet balance option will print how many coins are left in the wallet of the node.")
             print("\n* If you wish to terminate the app select the corresponding option.\n")
 
         if action[0] == 'Terminate client':

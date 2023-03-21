@@ -138,4 +138,7 @@ def last_transactions():
         export.append(b)
     return jsonify(export),200
 
+#make a new transaction
+@api.route('/new_transaction', methods = [])
+
 
