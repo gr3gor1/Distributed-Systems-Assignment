@@ -39,23 +39,26 @@ def application():
             'choices' : [
                 Separator('<== Actions ==>'),
                 {
-                    'name':'Create a new transaction.'
+                    'name':'Create a new transaction'
                 },
                 {
-                    'name':'View last transactions.'
+                    'name':'View last transactions'
                 },
                 {
-                    'name':'Show wallet balance.'
+                    'name':'Show wallet balance'
                 },
                 {
-                    'name':'Terminate client.'
+                    'name':'Help'  
+                },
+                {
+                    'name':'Terminate client'
                 }
             ]
         }]
 
         action  = prompt(actions,style=style)['actions']
         
-        if action[0] == 'Show wallet balance.':
+        if action[0] == 'Show wallet balance':
             address = 'http://' + ip + ':' + port + '/money'
             response = requests.get(address)
 
@@ -64,7 +67,23 @@ def application():
             else:
                 print("Something went wrong")
 
-        if action[0] == 'Terminate client.':
+        if action[0] == 'View last transactions':
+            address = 'http://' + ip + ':' + port + "/last_transactions"
+            response = requests.get(address)
+            if response.status_code == 200:
+                print("Successfully retrieved the transactions of the node's most recent block.")
+                for line in response.json():
+                    print(line)
+            else:
+                print("Something went wrong")
+
+        if action[0] == 'Help':
+            print("\n* Creating a new transaction will require from you to set a receiver and the amount to be sent.")
+            print("\n* Viewing the last transactions will present to you the transactions of the latest block in the chain.")
+            print("\n* Choosing the show wallet balance option will print how much coins are left in the wallet of the node.")
+            print("\n* If you wish to terminate the app select the corresponding option.\n")
+
+        if action[0] == 'Terminate client':
             exit = False
 
 

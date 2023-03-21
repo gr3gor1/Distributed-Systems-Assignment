@@ -124,5 +124,18 @@ def broadcast_block():
 def money():
     return jsonify({"message":str(node.wallet.balance())}), 200
 
+#show local transactions of the last block
+@api.route('/last_transactions', methods = ['GET'])
+def last_transactions():
+    latest_block = node.blockchain.chain[-1]
+    transactions = latest_block.listOfTransactions
+    export = []
+    for i in transactions:
+        b = {'sender':None,'recipient':None,'value':None}
+        b['sender'] = 'id' + str(i.sender)
+        b['recipient'] = 'id' + str(i.receiver)
+        b['value'] =  str(i.amount)
+        export.append(b)
+    return jsonify(export),200
 
 
