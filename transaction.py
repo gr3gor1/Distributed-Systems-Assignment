@@ -19,6 +19,8 @@ class Transaction:
         self.receiver_address = recipient_address
         #self.amount: το ποσό της συναλλαγής
         self.amount = value
+        #NBCs τα coins που εστάλησαν τελικά
+        self.NBCs = NBCs
         #self.transaction_id: το hash του transaction (hexadecimal format)
         if (transactionId):
             self.transaction_id = transactionId
@@ -27,7 +29,7 @@ class Transaction:
         #self.transaction_inputs: λίστα από Transaction Input 
         self.transaction_inputs = transactionIn
         #self.transaction_outputs: λίστα από Transaction Output
-        if (transactionOut != None):
+        if (transactionOut == None):
             self.create_out()
         else:
             self.transaction_outputs = transactionOut
@@ -37,18 +39,18 @@ class Transaction:
         self.sender = sender_id
         #receiver id
         self.receiver = recipient_id
-        #NBCs
-        self.NBCs = NBCs
+
 
     def sign_transaction(self,private_key):
         #Sign transaction with private key
-        sender = PKCS1_v1_5.new(RSA.importKey(binascii.unhexlify(private_key)))
+        private_key = RSA.importKey(private_key)
+        sender = PKCS1_v1_5.new(private_key)
         hash = SHA.new(str(self.__dict__).encode('utf8'))
         self.signature = binascii.hexlify(sender.sign(hash)).decode('ascii')
 
     def validate_transaction(self):
         #validate using sender's public key
-        key = RSA.importKey(self.sender_address.encode('utf-8'))
+        key = RSA.importKey(self.sender_address)
         message_hash = SHA.new(self.transaction_id.encode('utf-8'))
         verifier = PKCS1_v1_5.new(key)
         try:

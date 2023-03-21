@@ -32,6 +32,7 @@ class Node:
 
 		self.DIFFICULTY = None
 		self.CAPACITY = None
+		self.peers = None
 		
 	
 	def create_new_block(self):
@@ -58,7 +59,7 @@ class Node:
 		#add the UTXOs up to this point in the transaction inputs list
 		for transaction in self.wallet.transactions:
 			for out in transaction.transaction_outputs:
-				if(out.recipient == self.wallet.public_key.hex & out.unspent):
+				if((out.recipient == self.wallet.public_key) & out.unspent):
 					transaction_ins.append(TransactionInput(transaction.transaction_id))
 					transaction_ids.append(transaction.transaction_id)
 					out.unspent = False
@@ -78,7 +79,7 @@ class Node:
 			
 			#create Transaction
 			transaction = Transaction(
-				sender_address=self.wallet.public_key_hex,
+				sender_address=self.wallet.public_key,
 				sender_id= self.id,
 				recipient_address= r_address,
 				recipient_id= r_id,
@@ -87,7 +88,7 @@ class Node:
 				NBCs = amount_sent
 			)
 
-			transaction.sign_transaction(self.wallet.private_key_hex)
+			transaction.sign_transaction(self.wallet.private_key)
 
 			if (self.broadcast_transaction(transaction) != True):
 				for transaction in self.wallet.transactions:
@@ -147,9 +148,9 @@ class Node:
 
 	def add_transaction_to_block(self,transaction):
 		#if enough transactions  mine
-		if (transaction.receiver_address == self.wallet.public_key_hex):
+		if (transaction.receiver_address == self.wallet.public_key):
 			self.wallet.transactions.append(transaction)
-		if (transaction.sender_address == self.wallet.private_key_hex):
+		if (transaction.sender_address == self.wallet.private_key):
 			self.wallet.transactions.append(transaction)
 
 		for peer in self.ring:
@@ -186,7 +187,7 @@ class Node:
 		block.index = self.blockchain.chain[-1].index + 1
 		block.previousHash = self.blockchain.chain[-1].hash
 		current_hash = block.myHash()
-		while(current_hash.startswith('0'*self.DIFFICULTY) == False & self.mining_flag==False):
+		while((current_hash.startswith('0'*self.DIFFICULTY) == False) & (self.mining_flag==False)):
 			block.nonce +=1
 			current_hash = block.myHash()
 		block.hash = current_hash
@@ -244,7 +245,7 @@ class Node:
 
 		for index in range(len(chainOfBlocks)):
 			if index == 0 :
-				if(chainOfBlocks[index].previousHash != 1 or chainOfBlocks[index].hash != chainOfBlocks[index].myHash()):
+				if((chainOfBlocks[index].previousHash != 1) or (chainOfBlocks[index].hash != chainOfBlocks[index].myHash())):
 					return False
 			else:
 					if(chainOfBlocks[index].hash == chainOfBlocks[index].myHash()):

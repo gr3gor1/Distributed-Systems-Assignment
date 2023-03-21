@@ -47,7 +47,7 @@ blchain.chain[0].stringify()
 wallet = Wallet()
 #show attributes of wallet class
 wallet.stringify()
-#show initial balance without any UTXOs
+#show initial balance without any UTXOs (expects 0)
 wallet.balance()
 
 #test node class
@@ -72,7 +72,8 @@ node.active_block.index = 1
 node.active_block.previousHash = node.blockchain.chain[0].hash
 #give current hash
 node.active_block.hash = node.active_block.myHash()
-#print block contents
+#print block contents (expect nonce = None because we created block 
+# manually and did not use mine_block())
 node.active_block.stringify()
 #check if the initial block is valid
 node.validate_block(node.active_block)
@@ -81,30 +82,33 @@ node.valid_chain(node.blockchain)
 #append active block in the chain
 node.blockchain.add_block(node.active_block)
 #check the current chain
-node.valid_chain(node.active_block)
+node.valid_chain(node.blockchain)
 #create one more block
 node.create_new_block()
+#set DIFFICULTY
+node.DIFFICULTY = 4
 #mine block
 node.mine_block(node.active_block)
 #check the block contents
 node.active_block.stringify()
 
-#test transaction
+#test transaction class
 
 #create pair of keys 1
 random1 = RSA.generate(1024)
-private_key1 = binascii.hexlify(random1.exportKey()).decode()
-public_key1 = hashlib.sha256(random1.publickey().exportKey(format='DER')).digest().hex()
+private_key1 = random1.exportKey().decode()
+public_key1 = random1.publickey().exportKey().decode()
 #create pair of keys 2
 random2 = RSA.generate(1024)
-private_key2 = binascii.hexlify(random1.exportKey()).decode()
-public_key2 = hashlib.sha256(random2.publickey().exportKey(format='DER')).digest().hex()
-#check that the keys are not the same
+private_key2 = random2.exportKey().decode()
+public_key2 = random2.publickey().exportKey().decode()
+#check that the keys are not the same (should print False)
 print(private_key1 == private_key2)
 #create transaction from 1 to 2
-a = Transaction()
+a = Transaction(sender_address=public_key1,sender_id='0',recipient_address=public_key2,recipient_id="9",value=100,NBCs=100,transactionIn=None)
 #let 1 sign transaction
-a.sign_transaction(private_key1)
+print(a.sign_transaction(private_key1))
 #let 2 verify transaction with 
 print(a.validate_transaction())
+
 #test endpoints

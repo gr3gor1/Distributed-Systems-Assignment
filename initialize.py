@@ -31,7 +31,7 @@ CORS(app)
 #bootstrap
 boot_ip = '192.168.1.2'
 boot_port = '5000'
-boot = True
+boot = False
 
 #set the node's ip
 name = socket.gethostname() 
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     port = args.port
 
     #set difficulty,capacity,number of peers in the network
-    api.peers = args.number_of_nodes
+    node.peers = args.number_of_nodes
     node.CAPACITY = args.capacity
     node.DIFFICULTY = args.difficulty
 
@@ -66,8 +66,7 @@ if __name__ == '__main__':
             
             if res.status_code == 200:
                 print("Successfully initialized")
-                print("ID: "+ node.id)
-                print(res.text)
+
 
         thread = threading.Thread(target=fun)
         thread.start()
@@ -78,23 +77,29 @@ if __name__ == '__main__':
     else:
         #set the id to 0 initialize the ring
         node.id = 0
-        node.register_node_to_ring(ip,node.id,port,node.wallet.public_key,api.peers*100)
+        node.register_node_to_ring(ip,node.id,port,node.wallet.public_key,node.peers*100)
 
         #create the genesis block using .create_new_block with blockchain.chain being empty
         genesis = node.create_new_block()
         genesis.nonce = 0
 
         #create the transaction of giving N*100 coins to the bootstrap node from 0 address
-        transaction = Transaction(sender_address='0',sender_id='0',recipient_address=node.wallet.public_key,recipient_id=node.id,value=100*api.peers,NBCs=100*api.peers,transactionIn=None)
+        transaction = Transaction(sender_address='0',sender_id='0',recipient_address=node.wallet.public_key,recipient_id=node.id,value=100*node.peers,NBCs=100*node.peers,transactionIn=None)
+        
         #add the transaction in the genesis block
         genesis.add_transaction(transaction,node.CAPACITY)
         #add the transaction in the wallet of the node
         node.wallet.transactions.append(transaction)
+        
         #create the hash of the block
         genesis.hash = genesis.myHash()
+        
         #add genesis block (current active block) in the chain
         node.blockchain.add_block(node.active_block)
+        
         #set the active block of bootstrap node to blank so that we can continue
         node.active_block = None
+        
+        #run app
         app.run(host=boot_ip,port=port)      
   

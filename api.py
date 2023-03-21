@@ -10,10 +10,10 @@ from transactionIn import TransactionInput
 from transactionOut import TransactionOutput
 from node import Node
 
+#create node instance
 node = Node()
-#number of peers in the network (is provided from the user)
-peers = 2
 
+#set the subsection we will add later on to the main script
 api = Blueprint('api',__name__)
 
 #app functionality
@@ -21,7 +21,6 @@ api = Blueprint('api',__name__)
 #register node to the network
 @api.route('/registration', methods = ['POST'])
 def registration():
-    #print(request.json)
     ip = request.json.get('ip')
     port = str(request.json.get('port'))
     id = len(node.ring)
@@ -29,15 +28,16 @@ def registration():
 
     node.register_node_to_ring(ip,id,port,pub,0)
 
-    if (peers == id + 1):
+    if (node.peers == id + 1):
         for peer in node.ring:
             node.announce_ring(peer)
             node.announce_chain(peer)
             if peer['id'] != node.id:
                 node.create_transaction(peer['id'],peer['pub'],100)
-        res = jsonify(peer['id'])
+    
 
-    return res 
+    return jsonify({"status":"Registered"}),200
+        
 
 #learn the ring of the bootstrap node and set the id of the node
 @api.route('/learn_ring',methods = ['POST'])
@@ -49,20 +49,20 @@ def learn_ring():
         if peer['pub'] == node.wallet.public_key:
             node.id = peer['id']
 
-    return jsonify({'status':'Registered'})
+    return jsonify({'status':'SUCCESS'}),200
 
 #learn the chain of bootstrap node and initialize the local blockchain
 @api.route('/learn_chain',methods = ['POST'])
 def learn_chain():
     node.blockchain.chain = pickle.loads(request.get_data())
-    return jsonify({'status':"OK"}) 
+    return jsonify({'status':"ADDED"}) 
 
-#we ask for each node in the network to send their chains to resolve conflict
+#send local chain to resolve conflicts
 @api.route('/conflict_chain', methods = ['POST'])
 def conflict_chain():
     return pickle.dumps(node.blockchain.chain)
 
-#we make sure that the node can validate the transaction
+#validate posted transaction
 @api.route('/valid_transaction',methods=['POST'])
 def valid_transaction():
     #get the transaction
@@ -72,16 +72,17 @@ def valid_transaction():
     else:
         return jsonify({'status':'FAILURE'}), 400
 
-#we make known that this valid transaction should be added in the local node
+#add valid transaction 
 @api.route('/add_transaction',methods=['POST'])
 def add_transaction():
     transaction = pickle.loads(request.get_data())
     node.add_transaction_to_block(transaction)
     return jsonify({'status':'OK'}), 200
 
+#make sure an incoming block is valid and then insert it in the local node
 @api.route('/check_block',methods = ['POST'])
 def broadcast_block():
-    block = pickle.loads(request.get_data()):
+    block = pickle.loads(request.get_data())
     #make sure the chain is not in danger of being changed during the procedure
     node.lock_chain.acquire()
     if node.validate_block(block):

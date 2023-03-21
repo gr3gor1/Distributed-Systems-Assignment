@@ -18,11 +18,9 @@ class Wallet:
 	def __init__(self):
 		#create private key
 		root = RSA.generate(1024)
-		self.private_key = binascii.hexlify(root.exportKey()).decode()
+		self.private_key = root.exportKey().decode()
 		#create public key
-		self.public_key = hashlib.sha256(root.publickey().exportKey(format='DER')).digest().hex()
-		#wallet address is equal to the SHA256 hash of the public key in hexadecimal format
-		self.address = self.public_key
+		self.public_key = root.publickey().exportKey().decode()
 		#transaction of the wallet
 		self.transactions = []
 
