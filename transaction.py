@@ -66,7 +66,7 @@ class Transaction:
 
         #check for change
         if self.NBCs > self.amount:
-            send_out = transactionOut.TransactionOutput(self.transaction_id,self.receiver_address,self.NBCs-self.amount)
+            send_out = transactionOut.TransactionOutput(self.transaction_id,self.sender_address,self.NBCs-self.amount)
             self.transaction_outputs.append(send_out)
 
     def stringify(self):

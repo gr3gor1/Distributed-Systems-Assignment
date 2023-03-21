@@ -122,7 +122,7 @@ def broadcast_block():
 #show balance of the client in the local node
 @api.route('/money',methods = ['GET'])
 def money():
-    return jsonify({"message":node.wallet.transactions}), 200
+    return jsonify({"message":str(node.wallet.balance())}), 200
 
 
 

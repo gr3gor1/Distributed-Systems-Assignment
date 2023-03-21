@@ -2,8 +2,8 @@
 
 class TransactionOutput:
 
-    def __init__(self,previousOutputId,recipient,value):
-        self.transactionId = previousOutputId
+    def __init__(self,transactionId,recipient,value):
+        self.transactionId = transactionId
         self.recipient = recipient
         self.value = value
         self.unspent = True;

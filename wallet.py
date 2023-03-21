@@ -29,9 +29,9 @@ class Wallet:
 		#sum of the UTXOs according to the assignment
 		sum = 0
 		for transaction in self.transactions:
-			for out in transaction.transaction_out :
-				if out.unspent and out.recipient_address == self.public_key:
-					sum += out.amount
+			for out in transaction.transaction_outputs :
+				if out.unspent and out.recipient == self.public_key:
+					sum += out.value
 
 		return sum
 		

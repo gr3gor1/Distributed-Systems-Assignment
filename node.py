@@ -68,36 +68,36 @@ class Node:
 			if amount_sent >= value :
 				break
 
-			#if we dont we turn the transactions to unspent
-			if amount_sent < value :
-				for transaction in self.wallet.transactions:
-					for out in transaction.transaction_outputs:
-						if out.transactionId in transaction_ins:
-							out.unspent = True
+		#if we dont we turn the transactions to unspent
+		if amount_sent < value :
+			for transaction in self.wallet.transactions:
+				for out in transaction.transaction_outputs:
+					if out.transactionId in transaction_ins:
+						out.unspent = True
 
-				return False
+			return False
 			
-			#create Transaction
-			transaction = Transaction(
-				sender_address=self.wallet.public_key,
-				sender_id= self.id,
-				recipient_address= r_address,
-				recipient_id= r_id,
-				value = value,
-				transactionIn=transaction_ins,
-				NBCs = amount_sent
-			)
+		#create Transaction
+		transaction = Transaction(
+			sender_address=self.wallet.public_key,
+			sender_id= self.id,
+			recipient_address= r_address,
+			recipient_id= r_id,
+			value = value,
+			transactionIn=transaction_ins,
+			NBCs = amount_sent
+		)
 
-			transaction.sign_transaction(self.wallet.private_key)
+		transaction.sign_transaction(self.wallet.private_key)
 
-			if (self.broadcast_transaction(transaction) != True):
-				for transaction in self.wallet.transactions:
-					for out in transaction.transaction_outputs:
-						if out.transaction_id in transaction_ids:
-							out.unspent = True
-				return False
+		if (self.broadcast_transaction(transaction) != True):
+			for transaction in self.wallet.transactions:
+				for out in transaction.transaction_outputs:
+					if out.transaction_id in transaction_ids:
+						out.unspent = True
+			return False
 			
-			return True
+		return True
 	
 	def broadcast_transaction(self,transaction):
 	#we create N threads and almost simultaneously make the 
