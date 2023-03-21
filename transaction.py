@@ -69,5 +69,8 @@ class Transaction:
             send_out = transactionOut.TransactionOutput(self.transaction_id,self.receiver_address,self.NBCs-self.amount)
             self.transaction_outputs.append(send_out)
 
+    def stringify(self):
+        return str(self.__dict__)
+
         
 

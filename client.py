@@ -1,3 +1,5 @@
+import socket
+import requests
 from pyfiglet import Figlet
 from argparse import ArgumentParser
 from PyInquirer import Token,prompt,style_from_dict,Separator
@@ -22,30 +24,48 @@ def application():
         'name' : 'port',
         'message' : "What port of the node is the service using ?"
     }]
-    
-    port = prompt(port,style=style)['port']
+    hostname =  socket.gethostname()
+    ip = socket.gethostbyname(hostname)
+    port = str(prompt(port,style=style)['port'])
+    print(hostname)
+    print(ip)
     print(port)
+    exit = True
+    while exit:
+        actions = [{
+            'type' : 'checkbox',
+            'message' : 'What do you want to do',
+            'name' : 'actions',
+            'choices' : [
+                Separator('<== Actions ==>'),
+                {
+                    'name':'Create a new transaction.'
+                },
+                {
+                    'name':'View last transactions.'
+                },
+                {
+                    'name':'Show wallet balance.'
+                },
+                {
+                    'name':'Terminate client.'
+                }
+            ]
+        }]
 
-    actions = [{
-        'type' : 'checkbox',
-        'message' : 'What do you want to do',
-        'name' : 'actions',
-        'choices' : [
-            Separator('<== Actions ==>'),
-            {
-                'name':'Create a new transaction.'
-            },
-            {
-                'name':'View last transactions.'
-            },
-            {
-                'name':'Show wallet balance.'
-            }
-        ]
-    }]
+        action  = prompt(actions,style=style)['actions']
+        
+        if action[0] == 'Show wallet balance.':
+            address = 'http://' + ip + ':' + port + '/money'
+            response = requests.get(address)
 
-    action  = prompt(actions,style=style)['actions']
-    print(action)
+            if response.status_code == 200:
+                print("Current balance : " + str(response.json()['message']))
+            else:
+                print("Something went wrong")
+
+        if action[0] == 'Terminate client.':
+            exit = False
 
 
 if __name__ == "__main__":

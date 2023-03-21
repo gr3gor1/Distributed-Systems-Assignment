@@ -119,8 +119,10 @@ def broadcast_block():
                 node.lock_chain.release()
                 return jsonify({'status':'REJECTED'}), 400
 
-
-
+#show balance of the client in the local node
+@api.route('/money',methods = ['GET'])
+def money():
+    return jsonify({"message":node.wallet.transactions}), 200
 
 
 
