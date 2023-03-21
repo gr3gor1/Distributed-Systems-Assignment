@@ -64,7 +64,7 @@ def get_transaction():
     if not no_mine.is_set():
         no_mine.wait()
     master.validate_tran(data)
-    #print(master.wallet.mybalance())
+    print(master.wallet.mybalance())
     return jsonify({"Broadcast": "Done"}), 200
 
 @app.route('/broadcast/block', methods=['POST'])
@@ -79,6 +79,47 @@ def get_block():
     no_mine.set()
     #master.chain.add_block(data)
     return jsonify({"Broadcast": "Done"}), 200
+
+@app.route('/create_transaction', methods=['POST'])
+def create():
+    data = request.get_json()
+    addr = data['address']
+    # print ("Address is",addr)
+    amount = data['amount']
+    # print("Amount is",amount)
+    # current balance
+    bal = master.wallet.mybalance()
+    if (not addr.isnumeric() or int(addr) < 0 or int(addr) > master.participants):
+        response = {
+            'message': "Please provide a number between 0 and " + str(master.participants) + " as address."
+        }
+    elif (int(addr) == master.id):
+        response = {
+            'message': "You cannot make a transaction with yourself..."
+        }
+    elif (not amount.isnumeric() or int(amount) <= 0):
+        response = {
+            'message': "Please provide a positive number as amount."
+        }
+    elif int(amount) > bal:
+        print(bal)
+        response = {
+            'message': "Not enough money..."
+
+        }
+    else:
+        # stall transaction till mining is done
+        if not no_mine.isSet():
+            no_mine.wait()
+
+        sender = master.all_public_keys[master.id]
+        receiver = master.all_public_keys[int(addr)]
+        master.create_transaction(sender,receiver, int(amount))
+
+        response = {
+            'message': "Create transaction works !"
+        }
+    return jsonify(response), 200
         
 
 

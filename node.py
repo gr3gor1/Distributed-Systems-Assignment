@@ -51,6 +51,12 @@ class node:
 			self.child.clear()
 			t2 = threading.Thread( target = self.send_the_ring)
 			t2.start()
+ #########################################################
+			self.auto_run = threading.Event()
+			self.auto_run.clear()
+			thread3 = threading.Thread(target=self.run_all_trans)  # target to auto run trans
+			thread3.start()
+  
 		else:
 			self.register_new_node()
 
@@ -142,7 +148,7 @@ class node:
 		self.chain.list_blocks.append(gen)
 		trans_block_list = genesis['transactions'][0] # list
 		trans = trans_block_list 
-		self.chain.list_transactions.append(trans)
+		#self.chain.list_transactions.append(trans)
 
 		current_trans = {
             'transaction_id': trans['transaction_id'],
@@ -151,6 +157,7 @@ class node:
         }
 
 		self.wallet_dict[self.public_key_list[0]].append(current_trans)
+		self.auto_run.set()
 		return
 
    
@@ -237,9 +244,9 @@ class node:
 
 	def validate_block(self,block):
 		block = json.loads(block)
-		print(block['previous_hash'])
+		#print(block['previous_hash'])
 		if  block['previous_hash'] != self.chain.list_blocks[-1].myHash():
-			#print(11111)
+			print("valid block -> not ok")
 			return False
 		else:
 			new_block = Block(block['index'],block['transactions'],block['previous_hash'])
@@ -247,7 +254,8 @@ class node:
 			new_block.nonce=block['nonce']
 			if new_block.myHash()==(block['cur_hash']):
 				self.chain.mine.set()
-				print(2)
+				#print(2)
+				print("valid block -> ok")
 				self.chain.add_block(new_block)
 				return True
 			else:
@@ -289,7 +297,37 @@ class node:
 
 	def view_balance(self):
 		return self.wallet.mybalance()
- 
+
+
+
+#---------AYTO RUN-------#
+
+
+
+	def run_all_trans(self):
+     
+		self.auto_run.wait()  # w8 until trigger
+		time.sleep(5)
+		print('Check if genesis got in..')
+		if not no_mine.isSet():
+			no_mine.wait()
+      
+		print('Starting auto...')
+        
+		with open('5nodes/transactions' + str(self.id) + '.txt', 'r') as fd:
+			for line in fd:  # go through all lines and make transactions
+				rec, ammount = (line.strip('\n')).split(' ')
+				url = 'http://' + str(self.ip) + ':' + str(self.port) + "/create_transaction"
+				payload = {'address': rec[2], 'amount': ammount}  # give data as in cli form, [id, ammount]
+				payload = json.dumps(payload)
+				response = requests.post(url, data=payload,
+                                         headers={'Content-type': 'application/json',
+                                                  'Accept': 'text/plain'})  # hit API
+                # print(response.json())
+			time.sleep(1)  # sleep 1 sec and repeat
+
+		return
+
 	'''def create_transaction(sender, receiver, signature):
 		#remember to broadcast it
 

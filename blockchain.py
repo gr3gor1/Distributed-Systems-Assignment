@@ -9,7 +9,7 @@ import node
 import json
 
 headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-CAPACITY=3
+CAPACITY=1
 
 class Blockchain:
     def __init__(self):
@@ -34,7 +34,7 @@ class Blockchain:
         money = 100 * (participants + 1)
         genesis_block = Block(len(self.list_blocks),[],'0')
         trans = Transaction('0', address, money, [])
-        self.list_transactions.append(trans.transaction_to_json())
+        #self.list_transactions.append(trans.transaction_to_json())
         genesis_block.add_transaction(trans.to_dict())
         genesis_block.cur_hash = genesis_block.myHash()
         #print(genesis_block.cur_hash)
