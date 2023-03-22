@@ -4,6 +4,7 @@ import pickle
 from threading import Thread, Lock
 from copy import deepcopy
 import itertools
+import time
 
 
 from blockchain import Blockchain
@@ -241,7 +242,7 @@ class Node:
 
 	def valid_chain(self, chain):
 		#check if the chain we received is valid after a conflict
-		chainOfBlocks = chain.chain
+		chainOfBlocks = chain
 		condition1 = False
 		condition2 = False
 
@@ -273,21 +274,22 @@ class Node:
 			thread = Thread(target=dummy,args=(peer,blockchains))
 			threads.append(thread)
 			thread.start()
-
-		for thread in threads:
+			time.sleep(2)
 			thread.join()
 
-		winner = None
+		winner_length = 0
+		winner = []
 		for chain in blockchains:
-			if winner:
-				blockchain_length = len(chain.chain)
-				winner_length = len(winner.chain)
-				self_length = len(self.blockchain.chain)
+			blockchain_length = len(chain)
+			self_length = len(self.blockchain.chain)
+			if len(winner) == 0:
 				if (self.valid_chain(chain) & (blockchain_length>winner_length)):
 					winner = chain
+					winner_length = len(winner)
 			else:
 				if (self.valid_chain(chain) & (blockchain_length>self_length)):
 					winner = chain
+					winner_length = len(winner)
 
 		if winner:
 			self.mining_flag = True

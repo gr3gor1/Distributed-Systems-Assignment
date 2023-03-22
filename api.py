@@ -58,7 +58,7 @@ def learn_chain():
     return jsonify({'status':"ADDED"}) 
 
 #send local chain to resolve conflicts
-@api.route('/conflict_chain', methods = ['POST'])
+@api.route('/conflict_chain', methods = ['GET'])
 def conflict_chain():
     return pickle.dumps(node.blockchain.chain)
 
