@@ -69,10 +69,19 @@ def get_info():
 
             for node in node_.ring:
                 if node['id'] != node_.id:
+                    print()
+                    print(1)
                     new_transaction = node_.create_transaction(node['public_key'], 100)
-                    new_transaction.sign_transaction(node_.wallet.private_key)
-                    thread = threading.Thread(target = node_.broadcast_transaction, args=(new_transaction,))
-                    thread.start()
+                    print()
+                    print(2)
+                    node_.broadcast_transaction(new_transaction)
+                    print()
+                    print()
+                    print(len(node_.blockchain.chain), node_.blockchain.chain[-1].transactions)
+                    print()
+                    print()
+                    print()
+                    print(3)
                     node_.add_transaction_to_block(new_transaction, node_.blockchain.chain[-1])
 
             #print(len(node_.blockchain.chain), node_.blockchain.chain[-1].hash)
@@ -101,9 +110,16 @@ def get_ring():
    
 @app.route('/broadcast/transaction', methods=['POST'])
 def get_transaction():
+    print("received transaction...", datetime.now())
     data = pickle.loads(request.get_data())
-    if True:#node_.verify_signature(data.sender_address, data):
+    if data.sender_address == "0":
         node_.add_transaction_to_block(data, node_.blockchain.chain[-1])
+        print()
+        print()
+        print(len(node_.blockchain.chain), node_.blockchain.chain[-1].transactions)
+        print()
+        print()
+        
         new_utxos = []
         for utxo in node_.wallet.UTXOs:
             flag = True
@@ -118,8 +134,24 @@ def get_transaction():
         return jsonify({"Broadcast": "Done"}), 200
 
     else:
-        print('Invalid signature')
-        return jsonify({"Broadcast": "Failed"}), 400
+        if node_.verify_signature(data):
+            node_.add_transaction_to_block(data, node_.blockchain.chain[-1])
+            new_utxos = []
+            for utxo in node_.wallet.UTXOs:
+                flag = True
+                for utxo_id in data.transaction_inputs:
+                    if utxo['id'] == utxo_id:
+                        flag = False
+                if flag:
+                    new_utxos.append(utxo)
+
+            node_.wallet.UTXOs = new_utxos.copy()
+            node_.wallet.UTXOs.extend(data.transaction_outputs)
+            return jsonify({"Broadcast": "Done"}), 200
+
+        else:
+            print('Invalid signature')
+            return jsonify({"Broadcast": "Failed"}), 400
 
 
 #broadcast block        
@@ -178,9 +210,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     node_ = node(args.id, args.bootstrap, args.ip, args.port, blockchain, args.nodes)
-    thread = threading.Thread(target=app.run(host=args.ip, port=args.port, debug=True, use_reloader=False))
-    thread.start()
-    #app.run(host=args.ip, port=args.port, debug=True, use_reloader=False)
+    #thread = threading.Thread(target=app.run(host=args.ip, port=args.port, debug=True, use_reloader=False))
+    #thread.start()
+    app.run(host=args.ip, port=args.port, debug=True, use_reloader=False)
 
     print('Length of blockchain: ', len(node_.blockchain.chain))
     for i, block in enumerate(node_.blockchain.chain):

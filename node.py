@@ -13,7 +13,7 @@ from Crypto.Signature import PKCS1_v1_5
 import binascii
 
 CAPACITY = 1
-MINING_DIFFICULTY = 4
+MINING_DIFFICULTY = 6
 
 headers={'Content-type':'application/json','Accept':'text/plain'}
 
@@ -37,6 +37,7 @@ class node:
 		else:
 			thread = threading.Thread(target = self.share_node_info)
 			thread.start()
+			#thread.join()
 
 	def share_node_info(self):
 		data = {'id': self.id, 
@@ -46,13 +47,16 @@ class node:
 
 		address = 'http://127.0.0.1:5000/get_ring_info'
 		response = requests.post(address, data=json.dumps(data), headers=headers)
+		return True
 
 #--------------------------------------NEW BLOCKS/TRANSACTIONS----------------------------------------
 
-	def create_new_block(self):
-		new_block = self.mine_block()
+	def create_new_block(self, first_transaction):
+		print('About to mine...')
+		new_block = self.mine_block(first_transaction)
 		if new_block.confirmed:
 			self.broadcast_block(new_block)
+			self.blockchain.add_block(new_block)
 		return new_block
 
 	def create_transaction(self, recipient_address, amount, initial_transaction=False):
@@ -93,6 +97,7 @@ class node:
 														'amount': sent_amount-amount,
 														'recipient': self.wallet.address}]
 
+				new_transaction.sign_transaction(self.wallet.private_key)
 				self.wallet.UTXOs = not_to_be_spent.copy()
 				self.wallet.UTXOs.extend(new_transaction.transaction_outputs)
 				return new_transaction
@@ -115,32 +120,50 @@ class node:
 	def add_transaction_to_block(self, transaction, block):
 		#if enough transactions  mine
 		if len(block.transactions) == CAPACITY:
-			new_block = self.create_new_block()
-			if new_block.confirmed:
-				self.blockchain.add_block(new_block)
-				new_block.add_transaction(transaction)
+			print("00000000")
+			self.create_new_block(first_transaction = transaction)
 		else:
+			print("1111111")
 			block.add_transaction(transaction)
+		print("Node:",self.id, "Time:", datetime.now())
 
 #--------------------------------------BROADCASTS-----------------------------------------------------
 
 	def broadcast_transaction(self, transaction):
-		for node in self.ring:
+		if transaction.sender_address == "0":
+			print('broadcasting initial transaction...')
+		else:
+			print('broadcasting transaction...', datetime.now())
+		#cnt = 0
+		def broadcast(transaction):
 			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/transaction'
+			response = requests.post(address, data=pickle.dumps(transaction))
+			if response.status_code != 200:
+				#cnt += 1
+				print("Failed to broadcast a transaction!")
+
+		for node in self.ring:
 			if node['id'] != self.id:
-				response = requests.post(address, data=pickle.dumps(transaction))
-				if response.status_code != 200:
-					return False
+				thread = threading.Thread(target = broadcast, args=(transaction,))
+				thread.start()
+		
 		return True
 	
 	def broadcast_block(self, block):
 		print('broadcasting mined block...')
-		for node in self.ring:
+		#cnt = 0
+		def broadcast(block):
 			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/block'
+			response = requests.post(address, data=pickle.dumps(block))
+			if response.status_code != 200:
+				#cnt += 1
+				print("Failed to broadcast a block!")
+
+		for node in self.ring[::-1]:
 			if node['id'] != self.id:
-				response = requests.post(address, data=pickle.dumps(block))
-				if response.status_code != 200:
-					return False
+				thread = threading.Thread(target = broadcast, args=(block,))
+				thread.start()
+		
 		return True
 
 	def broadcast_ring(self):
@@ -167,11 +190,11 @@ class node:
 		#use of signature and NBCs balance
 		return transaction.verify_transaction(transaction.sender_address)
 
-	def verify_signature(self, public_key, transaction):
+	def verify_signature(self, transaction):
         # Load public key and verify message
 		hash_obj = transaction.to_dict()
 		hash_obj = SHA.new(str(hash_obj).encode())
-		public_key = RSA.importKey(binascii.unhexlify(public_key))
+		public_key = RSA.importKey(binascii.unhexlify(transaction.sender_address))
 		verifier = PKCS1_v1_5.new(public_key)
 		return verifier.verify(hash_obj, binascii.unhexlify(transaction.signature))
 
@@ -192,9 +215,8 @@ class node:
 
 #--------------------------------------MINING-----------------------------------------------------
 
-	def mine_block(self):   
-		new_block = Block(index = self.blockchain.chain[-1].index+1, previous_hash = self.blockchain.chain[-1].hash, transactions = [])
-		#miner = threading.Thread(target=self.proof_of_work(new_block))#, args=[new_block])
+	def mine_block(self, first_transaction):   
+		new_block = Block(index = self.blockchain.chain[-1].index+1, previous_hash = self.blockchain.chain[-1].hash, transactions = [first_transaction])
 		self.proof_of_work(new_block)
 		return new_block
 
