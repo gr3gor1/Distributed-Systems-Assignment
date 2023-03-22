@@ -1,25 +1,14 @@
-from Crypto.PublicKey import RSA
-from Crypto.Random import get_random_bytes
-import time
-time.clock = time.time
 
-# Generate an RSA key pair
-key1 = RSA.generate(1024, randfunc=get_random_bytes)
+def read_transactions(total_nodes, id):
+    transactions = []
+    with open("transactions/{}nodes/transactions{}.txt".format(total_nodes, id), "r") as file:
+        content = file.readlines()
+        for line in content:
+            id, amount = line.split()
+            transactions.append([int(id[2]), int(amount)])
+    return transactions
 
-# Print the private key in PEM format
-private_key1 = key1.exportKey()
-#print("Private Key:\n", private_key.decode())
+    
+transactions = read_transactions(5, 0)
 
-# Print the public key in PEM format
-public_key1 = key1.publickey().exportKey()
-print("Public Key:\n", public_key1.decode('ISO-8859-1'))
-
-key2 = RSA.generate(1024, randfunc=get_random_bytes)
-
-# Print the private key in PEM format
-private_key2 = key2.exportKey()
-#print("Private Key:\n", private_key.decode())
-
-# Print the public key in PEM format
-public_key2 = key2.publickey().exportKey()
-print("Public Key:\n", public_key2.decode('ISO-8859-1'))
+print(transactions)

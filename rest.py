@@ -83,6 +83,10 @@ def get_info():
                     print()
                     print(3)
                     node_.add_transaction_to_block(new_transaction, node_.blockchain.chain[-1])
+            
+            time.sleep(1)
+            node_.broadcast_init_finished()
+            transactions = node_.read_transactions()
 
             #print(len(node_.blockchain.chain), node_.blockchain.chain[-1].hash)
 
@@ -170,6 +174,16 @@ def get_block():
 def get_chain():
     data = request.get_json()
     node_.blockchain.chain = data
+    return jsonify(data), 200
+
+#broadcast init finished
+
+@app.route('/broadcast/init_finished', methods = ['POST'])
+def get_init_finished():
+    data = json.loads(request.get_data())
+    print(data)
+    if data != None:
+        transactions = node_.read_transactions()
     return jsonify(data), 200
    
 #get the balance of a node

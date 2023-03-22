@@ -12,8 +12,8 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 import binascii
 
-CAPACITY = 1
-MINING_DIFFICULTY = 6
+CAPACITY = 2
+MINING_DIFFICULTY = 4
 
 headers={'Content-type':'application/json','Accept':'text/plain'}
 
@@ -184,6 +184,20 @@ class node:
 					return False
 		return True
 
+	def broadcast_init_finished(self):
+		def broadcast():
+			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/init_finished'
+			response = requests.post(address, data=json.dumps({"data": "Initialization finished, start reading transactions!"}))
+			if response.status_code != 200:
+				#cnt += 1
+				print("Failed to broadcast that initialization finished!")
+
+		for node in self.ring:
+			if node['id'] != self.id:
+				thread = threading.Thread(target = broadcast)
+				thread.start()
+
+
 #--------------------------------------VALIDATIONS-----------------------------------------------------
 
 	def validate_transaction(self, transaction):
@@ -264,6 +278,17 @@ class node:
 		return True
 
 #--------------------------------------VIEWS-----------------------------------------------------
+
+	def read_transactions(self):
+		transactions = []	
+		with open("transactions/{}nodes/transactions{}.txt".format(self.total_nodes, self.id), "r") as file:
+			content = file.readlines()
+			for line in content:
+				id, amount = line.split()
+				transactions.append([int(id[2]), int(amount)])
+			print(transactions)
+		return transactions
+
 
 	def view_transactions(self):
 		return self.blockchain.chain[-1].transactions
