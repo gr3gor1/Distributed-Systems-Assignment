@@ -3,7 +3,7 @@ from hashlib import sha256
 import json
 
 
-MINING_DIFFICULTY=3
+MINING_DIFFICULTY=4
 
 
 class Block:
@@ -37,7 +37,7 @@ class Block:
 	def mine_block(self,event):
 		while self.valid_proof() is False and not event.isSet():
 			self.nonce += 1
-			print('mining...')
+			#print('mining...')
 		self.cur_hash = self.myHash()
 		return self
 

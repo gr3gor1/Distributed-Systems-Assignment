@@ -31,6 +31,13 @@ class node:
 		self.ring = [addr] 
 		self.participants=participants
 		self.public_key_list = []
+		#########################################################
+		self.auto_run = threading.Event()
+		self.auto_run.clear()
+		thread3 = threading.Thread(target=self.run_all_trans)  # target to auto run trans
+		thread3.start()
+		
+  
 
 		if(bootstrap == "yes"):
 			self.seen = 0 
@@ -51,11 +58,6 @@ class node:
 			self.child.clear()
 			t2 = threading.Thread( target = self.send_the_ring)
 			t2.start()
- #########################################################
-			self.auto_run = threading.Event()
-			self.auto_run.clear()
-			thread3 = threading.Thread(target=self.run_all_trans)  # target to auto run trans
-			thread3.start()
   
 		else:
 			self.register_new_node()
@@ -165,6 +167,7 @@ class node:
 		print("send 100 to {} node".format(i))
 		self.create_transaction(self.public_key_list[0],receiver_address,100)
 		print("Boss balance", self.wallet.mybalance())
+		self.auto_run.set()
    
 #--------------------------------------TRANSACTIONS----------------------------------------
  
@@ -247,6 +250,12 @@ class node:
 		#print(block['previous_hash'])
 		if  block['previous_hash'] != self.chain.list_blocks[-1].myHash():
 			print("valid block -> not ok")
+			no_mine.set()
+			self.chain.mine.set()
+			self.consesus = threading.Event()
+			self.consesus.clear()
+			thread3 = threading.Thread(target=self.valid_chain)  # target to auto run trans
+			thread3.start()
 			return False
 		else:
 			new_block = Block(block['index'],block['transactions'],block['previous_hash'])
@@ -263,11 +272,12 @@ class node:
 
 #--------------------------------------CONSENSUS-----------------------------------------------------
 	def valid_chain(self):
+		self.auto_run.wait()
 		#check for the longer chain across all nodes
 		chains = []
-		for node in self.ring:
-			if node['id'] != self.id:
-				address = 'http://' + node['ip'] + ':' + node['port']
+		for rin in self.ring:
+			address = rin + '/send_chain'
+			if rin != ("http://" + str(self.ip) + ":"+ str(self.port)):
 				response = requests.get(address + "/send_chain")
 				chains.append(response._content)
 		
@@ -281,14 +291,8 @@ class node:
 
 	def resolve_conflicts(self):
 		#resolve correct chain
-		valid_chain = self.valid_chain()
-		for node in self.ring:
-			if node['id'] != self.id:
-				address = 'http://' + node['ip'] + ':' + node['port']
-				response = requests.post(address + "/send_chain", data=json.dumps(valid_chain))
-				if response.status_code != 200:
-					return False
-		return True
+		self.chain.list_blocks=self.valid_chain()
+		return self.auto_run.set()
 
 #--------------------------------------VIEWS-----------------------------------------------------
 
@@ -314,9 +318,10 @@ class node:
       
 		print('Starting auto...')
         
-		with open('5nodes/transactions' + str(self.id) + '.txt', 'r') as fd:
+		with open('/Users/tassos/Desktop/22-23/Distributed-Systems-Assignment/transactions /5nodes/transactions' + str(self.id) + '.txt', 'r') as fd:
 			for line in fd:  # go through all lines and make transactions
 				rec, ammount = (line.strip('\n')).split(' ')
+				#print(rec)
 				url = 'http://' + str(self.ip) + ':' + str(self.port) + "/create_transaction"
 				payload = {'address': rec[2], 'amount': ammount}  # give data as in cli form, [id, ammount]
 				payload = json.dumps(payload)

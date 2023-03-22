@@ -84,7 +84,7 @@ def get_block():
 def create():
     data = request.get_json()
     addr = data['address']
-    # print ("Address is",addr)
+    #print ("Address is",addr)
     amount = data['amount']
     # print("Amount is",amount)
     # current balance
@@ -102,18 +102,19 @@ def create():
             'message': "Please provide a positive number as amount."
         }
     elif int(amount) > bal:
-        print(bal)
+        #print(bal)
         response = {
             'message': "Not enough money..."
 
         }
     else:
         # stall transaction till mining is done
-        if not no_mine.isSet():
+        if not no_mine.is_set():
             no_mine.wait()
 
-        sender = master.all_public_keys[master.id]
-        receiver = master.all_public_keys[int(addr)]
+        sender = master.public_key_list[master.id]
+        receiver = master.public_key_list[int(addr)]
+       
         master.create_transaction(sender,receiver, int(amount))
 
         response = {
@@ -122,10 +123,24 @@ def create():
     return jsonify(response), 200
         
 
-
+@app.route('/send_chain', methods=['GET'])
+def send_chain():
+    #data = pickle.loads(request.get_data())
+    master.auto_run.wait()
+    no_mine.set()
+    master.chain.mine.set()
+    print("consesous")
+    return pickle.dumps(master.chain.ist_blocks)
 
 # run it once fore every node
 
 if __name__ == '__main__':
 
     app.run(host=sys.argv[2], port=int(sys.argv[3]))
+    
+    
+    for i, block in enumerate(master.chain.list_blocks):
+        print('Block {}:'.format(i))
+        print('Previous hash:', block.previous_hash)
+        print('Current hash:', block.myHash())
+        print('Count Transactions:',len(block.listOftransactions))
