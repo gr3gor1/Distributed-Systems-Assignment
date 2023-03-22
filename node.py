@@ -67,14 +67,15 @@ class Node:
 			#if we have enough money to sent then break
 			if amount_sent >= value :
 				break
-
+		print(transaction_ins)
+		print(amount_sent)
 		#if we dont we turn the transactions to unspent
-		if amount_sent < value :
+		if amount_sent < value:
 			for transaction in self.wallet.transactions:
 				for out in transaction.transaction_outputs:
 					if out.transactionId in transaction_ins:
 						out.unspent = True
-
+			print('passed')
 			return False
 			
 		#create Transaction
@@ -87,7 +88,7 @@ class Node:
 			transactionIn=transaction_ins,
 			NBCs = amount_sent
 		)
-
+		print('passed1')
 		transaction.sign_transaction(self.wallet.private_key)
 
 		if (self.broadcast_transaction(transaction) != True):
@@ -95,6 +96,7 @@ class Node:
 				for out in transaction.transaction_outputs:
 					if out.transaction_id in transaction_ids:
 						out.unspent = True
+			print('passed2')
 			return False
 			
 		return True
@@ -105,7 +107,7 @@ class Node:
 	#at first we seek validation of the transaction
 		def dummy(peer,res,endpoint):
 			if peer['id'] != self.id:
-				address = "http://" + peer['ip'] + ":" + peer['port']
+				address = "http://" + peer['ip'] + ":" + str(peer['port'])
 				response = requests.post(address + endpoint,data=pickle.dumps(transaction))
 				res.append(response.status_code)
 
@@ -150,7 +152,7 @@ class Node:
 		#if enough transactions  mine
 		if (transaction.receiver_address == self.wallet.public_key):
 			self.wallet.transactions.append(transaction)
-		if (transaction.sender_address == self.wallet.private_key):
+		if (transaction.sender_address == self.wallet.public_key):
 			self.wallet.transactions.append(transaction)
 
 		for peer in self.ring:
@@ -199,7 +201,7 @@ class Node:
 		#node then add it in the chain
 
 		def dummy(peer,res):
-			address = 'http://' + peer['ip'] + ":" + peer['port']
+			address = 'http://' + peer['ip'] + ":" + str(peer['port'])
 			response = requests.post(address + '/check_block',data=pickle.dumps(block))
 			res.append(response.status_code)
 
@@ -259,9 +261,9 @@ class Node:
 	def resolve_conflicts(self,block):
 		#after broadcasts to concentrate all the chains we validate the incoming chains and then decide to stick with the longest one
 		def dummy(peer,blockchains):
-			address = "http://" + peer['ip'] + ':' + peer['port']
+			address = "http://" + peer['ip'] + ':' + str(peer['port'])
 			response = requests.get(address + '/conflict_chain')
-			blockchain = pickle.dumps(response._content)
+			blockchain = pickle.loads(response._content)
 			blockchains.append(blockchain)
 
 		threads = []
@@ -309,7 +311,7 @@ class Node:
 		#check for double transactions between added block and blocks you still havent check
 		with self.lock_block:
 			#flatten list of transactions in unchecked blocks
-			transactions = list(itertools.chain.from_iterable([ublock.tr for ublock in self.to_check]))
+			transactions = list(itertools.chain.from_iterable([ublock.listOfTransactions for ublock in self.to_check]))
 
 			if (self.active_block):
 				transactions.extend(self.active_block.listOfTransactions)
@@ -343,13 +345,13 @@ class Node:
 	def announce_ring(self,node):
 		if node['id'] != self.id:
 			payload = {"data":self.ring}
-			address = 'http://' + node['ip'] + ':' + node['port']
+			address = 'http://' + node['ip'] + ':' + str(node['port'])
 			requests.post(address + '/learn_ring', json = payload)
 
 	#this function will be used to announce chain from the bootstrap node
 	def announce_chain(self,node):
 		if node['id'] != self.id:
-			address = 'http://' + node['ip'] + ':' + node['port']
+			address = 'http://' + node['ip'] + ':' + str(node['port'])
 			requests.post(address + '/learn_chain',data = pickle.dumps(self.blockchain.chain))
 
 

@@ -97,12 +97,16 @@ def application():
             #print(type(content['amount']))
             address = 'http://' + ip + ':' + port + '/transaction'
             response = requests.post(address,json=content)
+            
             if response.status_code == 200:
                 print('Transaction completed')
+            
             if response.status_code == 400:
                 print("There is no public address for this node's id")
-            else:
-                print("Something went wrong")
+
+            if response.status_code == 401:
+                print("Couldnt create transaction")
+
 
         if action[0] == 'Help':
             print("\n* Creating a new transaction will require from you to set a receiver and the amount to be sent.")
