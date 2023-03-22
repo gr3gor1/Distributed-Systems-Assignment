@@ -139,6 +139,25 @@ def last_transactions():
     return jsonify(export),200
 
 #make a new transaction
-@api.route('/new_transaction', methods = [])
+@api.route('/transaction', methods = ['POST'])
+def new_transaction():
+    #turn the data we received from string to int
+    recipient_id = request.json.get('id')
+    #the node should not be able to send money to itself
+    if recipient_id != str(node.id):
+        value = request.json.get('amount')
+
+        #then we search for info about the node with the
+        #id that is provided from the client
+        for peer in node.ring:
+            if str(peer['id']) == recipient_id:
+                if (peer['pub']!=None):
+                    check = node.create_transaction(peer['id'],peer['pub'],value)
+                    if (check==True):
+                        return jsonify({"message":"SUCCESS"}),200 
+                    else: 
+                        return 400
+                else:
+                    return 400
 
 

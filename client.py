@@ -1,4 +1,5 @@
 import socket
+import json
 import requests
 from pyfiglet import Figlet
 from argparse import ArgumentParser
@@ -27,9 +28,9 @@ def application():
     hostname =  socket.gethostname()
     ip = socket.gethostbyname(hostname)
     port = str(prompt(port,style=style)['port'])
-    print(hostname)
-    print(ip)
-    print(port)
+    #print(hostname)
+    #print(ip)
+    #print(port)
     exit = True
     while exit:
         actions = [{
@@ -37,7 +38,7 @@ def application():
             'message' : 'What do you want to do',
             'name' : 'actions',
             'choices' : [
-                Separator('<== Actions ==>'),
+                Separator('\n<============ Actions ============>\n'),
                 {
                     'name':'Create a new transaction'
                 },
@@ -74,6 +75,32 @@ def application():
                 print("Successfully retrieved the transactions of the node's most recent block.")
                 for line in response.json():
                     print(line)
+            else:
+                print("Something went wrong")
+
+        if action[0] == 'Create a new transaction':
+            form = [
+                {
+                'type':'input',
+                'name': 'id',
+                'message': 'Select id'
+                },
+                {
+                'type':'input',
+                'name': 'amount',
+                'message': 'Select amount'
+                }
+            ]
+
+            content = prompt(form)
+            #print(type(content['id']))
+            #print(type(content['amount']))
+            address = 'http://' + ip + ':' + port + '/transaction'
+            response = requests.post(address,json=content)
+            if response.status_code == 200:
+                print('Transaction completed')
+            if response.status_code == 400:
+                print("There is no public address for this node's id")
             else:
                 print("Something went wrong")
 
