@@ -61,8 +61,8 @@ def register_child():
 @app.route('/broadcast/transaction', methods=['POST'])
 def get_transaction():
     #data = pickle.loads(request.get_data())
-    n=master.id	
-    time.sleep(n)
+    #n=master.id	
+    #time.sleep(n)
     data = json.loads(request.get_json())
     if not no_mine.is_set():
         no_mine.wait()
@@ -126,7 +126,7 @@ def create():
     return jsonify(response), 200
         
 
-@app.route('/send_chain', methods=['GET'])
+@app.route('/send_chain', methods=['POST'])
 def send_chain():
     #data = pickle.loads(request.get_data())
     print("hiiii")
@@ -146,3 +146,4 @@ if __name__ == '__main__':
         print('Previous hash:', block.previous_hash)
         print('Current hash:', block.myHash())
         print('Count Transactions:',len(block.listOftransactions))
+    print("Balance:",master.wallet.mybalance())

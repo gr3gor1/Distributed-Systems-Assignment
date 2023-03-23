@@ -279,9 +279,11 @@ class node:
 		for rin in self.ring:
 			address = rin + '/send_chain'
 			if rin != ("http://" + str(self.ip) + ":"+ str(self.port)):
-				response = requests.get(address + "/send_chain")
+				response = requests.get(address + "/send_chain",headers=headers)
 				chains.append(response._content)
-		
+		print()
+		print()
+		print(response._content)
 		max_length = 0
 		for chain in chains:
 			if len(chain) > max_length:

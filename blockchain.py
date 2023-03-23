@@ -9,7 +9,7 @@ import node
 import json
 
 headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-CAPACITY=3
+CAPACITY=5
 
 class Blockchain:
     def __init__(self):
@@ -70,7 +70,7 @@ class Blockchain:
             
     def lets_mine(self,block):
         print("start mining")
-        strart_mine_time = time.time()
+        time.sleep(1)
         block.mine_block(self.mine)
         time.sleep(1)
         #print(self.mine.isSet())
