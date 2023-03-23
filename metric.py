@@ -26,7 +26,7 @@ def start():
             if response.status_code == 200:
                 print('Transaction completed')
             else:
-                print('φελουρ')
+                print('Failure')
                 continue
 
 if __name__ == "__main__":

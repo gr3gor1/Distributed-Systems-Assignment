@@ -66,8 +66,8 @@ class Node:
 					out.unspent = False
 					amount_sent += out.value
 			#if we have enough money to sent then break
-			print(str(amount_sent)+' balance')
-			print(str(value) + ' value')
+			#print(str(amount_sent)+' balance')
+			#print(str(value) + ' value')
 			if amount_sent >= value :
 				break
 		#print(transaction_ins)
@@ -78,7 +78,7 @@ class Node:
 				for out in transaction.transaction_outputs:
 					if out.transactionId in transaction_ids:
 						out.unspent = True
-			print('passed')
+			#print('passed')
 			return False
 			
 		#create Transaction
@@ -99,7 +99,7 @@ class Node:
 				for out in transaction.transaction_outputs:
 					if out.transaction_id in transaction_ids:
 						out.unspent = True
-			print('passed2')
+			#print('passed2')
 			return False
 			
 		return True

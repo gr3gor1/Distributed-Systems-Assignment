@@ -1,6 +1,7 @@
 import socket
 import json
 import requests
+from initialize import boot
 from pyfiglet import Figlet
 from argparse import ArgumentParser
 from PyInquirer import Token,prompt,style_from_dict,Separator
@@ -33,29 +34,58 @@ def application():
     #print(port)
     exit = True
     while exit:
-        actions = [{
-            'type' : 'checkbox',
-            'message' : 'What do you want to do',
-            'name' : 'actions',
-            'choices' : [
-                Separator('\n<============ Actions ============>\n'),
-                {
-                    'name':'Create a new transaction'
-                },
-                {
-                    'name':'View last transactions'
-                },
-                {
-                    'name':'Show wallet balance'
-                },
-                {
-                    'name':'Help'  
-                },
-                {
-                    'name':'Terminate client'
-                }
-            ]
-        }]
+        if not boot:
+            actions = [{
+                'type' : 'checkbox',
+                'message' : 'What do you want to do',
+                'name' : 'actions',
+                'choices' : [
+                    Separator('\n<============ Actions ============>\n'),
+                    {
+                        'name':'Create a new transaction'
+                    },
+                    {
+                        'name':'View last transactions'
+                    },
+                    {
+                        'name':'Show wallet balance'
+                    },
+                    {
+                        'name':'Help'  
+                    },
+                    {
+                        'name':'Terminate client'
+                    }
+                ]
+            }]
+
+        else:
+            actions = [{
+                'type' : 'checkbox',
+                'message' : 'What do you want to do',
+                'name' : 'actions',
+                'choices' : [
+                    Separator('\n<============ Actions ============>\n'),
+                    {
+                        'name':'Create a new transaction'
+                    },
+                    {
+                        'name':'View last transactions'
+                    },
+                    {
+                        'name':'Show wallet balance'
+                    },
+                    {
+                        'name':'Help'  
+                    },
+                    {
+                        'name':'5 nodes experiment'
+                    },
+                    {
+                        'name':'Terminate client'
+                    }
+                ]
+            }]
 
         action  = prompt(actions,style=style)['actions']
         
@@ -104,12 +134,19 @@ def application():
             if response.status_code == 400:
                 print("Couldnt create transaction")
 
-
         if action[0] == 'Help':
             print("\n* Creating a new transaction will require from you to set a receiver and the amount to be sent.")
             print("\n* Viewing the last transactions will present to you the transactions of the latest block in the chain.")
             print("\n* Choosing the show wallet balance option will print how many coins are left in the wallet of the node.")
             print("\n* If you wish to terminate the app select the corresponding option.\n")
+
+        if action[0] == '5 nodes experiment':
+            address = 'http://' + ip + ':' + port + '/five_nodes'
+            response = requests.get(address)
+
+            if response.status_code == 200:
+                 print("Started")
+            
 
         if action[0] == 'Terminate client':
             exit = False

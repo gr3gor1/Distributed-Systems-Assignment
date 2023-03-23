@@ -2,6 +2,8 @@ import requests
 import json
 import time
 import pickle
+import os
+from threading import Thread 
 from flask import Blueprint,Flask, jsonify, request, render_template
 
 from block import Block
@@ -165,5 +167,50 @@ def transaction():
     else:
             return jsonify({"message":'Wrong id'}), 400
 
+@api.route('/five_nodes', methods=['GET'])
+def five_nodes():
+    def dummy(peer,ans):
+        address = 'http://' + peer['ip'] + ':' + str(peer['port']) + '/init5'
+        response = requests.get(address)
+        ans.append(response.status_code)
+
+    ans = []
+    for peer in node.ring:
+        thread = Thread(target=dummy,args=(peer,ans))
+        thread.start()
     
+    for i in ans:
+        if i != 200:
+            return 300
+        
+    return json.dumps({'ans':ans}) , 200
+
+@api.route('/init5',methods = ['GET'])
+def init5():
+    id = node.id
+    credentials = None
+    for cred in node.ring:
+        if str(cred['id']) == str(id):
+            credentials = cred
+           
+    address =  'http://' + credentials['ip'] + ':' + str(credentials['port']) + '/transaction'
+    file = os.path.join('/home/user/5nodes','transactions'+str(node.id)+'.txt')
+    with open(file,'r') as text:
+        for line in text:
+            line = line.split()
+            recipient = int(line[0][2])
+            amount = int(line[1])
+            string = {'id':recipient,'amount':amount}
+            response = requests.post(address,json=string)
+            if response.status_code == 200:
+                print('Transaction completed')
+            else:
+                print('Failure')
+
+    return '',200
+
+
+
+
+
 
