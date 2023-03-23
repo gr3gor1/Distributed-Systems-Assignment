@@ -18,6 +18,10 @@ portbootstrap="5000"
 no_mine = threading.Event()
 no_mine.set()
 
+consesus = threading.Event()
+consesus.set()
+
+
 
 class node:
 	def __init__(self, id, ip, port,participants,bootstrap):
@@ -176,6 +180,8 @@ class node:
 		sent_value = 0
 		transaction_inputs = []
 		flag = False
+		to_be_spent = []
+		not_to_be_spent = []
 		for i, utxo in enumerate(self.wallet.UTXOs):
 			if utxo['recipient'] == self.wallet.address:
 				sent_value += utxo['value']
@@ -186,6 +192,9 @@ class node:
 					except:
 						self.wallet.UTXOs = []
 					flag = True
+				else:
+					not_to_be_spent.append(self.wallet.UTXOs[i])
+					
 					break
 		
 		if flag:
@@ -200,6 +209,7 @@ class node:
 													'recipient':sender}]
 			
 			self.wallet.UTXOs.extend(new_transaction.transaction_outputs)
+			self.wallet.UTXOs = not_to_be_spent.copy()
 			self.wallet_dict[receiver_address].append(new_transaction.transaction_outputs[0])
 			new_transaction.Signature = new_transaction.sign_transaction(self.wallet.private_key,new_transaction)
    
@@ -253,6 +263,7 @@ class node:
 			no_mine.set()
 			self.auto_run.wait()
 			self.chain.mine.set()
+			#self.valid_chain()
 			self.consesus = threading.Event()
 			self.consesus.clear()
 			thread3 = threading.Thread(target=self.valid_chain)  # target to auto run trans
@@ -273,17 +284,19 @@ class node:
 
 #--------------------------------------CONSENSUS-----------------------------------------------------
 	def valid_chain(self):
-		self.auto_run.wait()
+		consesus.clear()
 		#check for the longer chain across all nodes
 		chains = []
 		for rin in self.ring:
-			address = rin + '/send_chain'
+			address = rin 
 			if rin != ("http://" + str(self.ip) + ":"+ str(self.port)):
-				response = requests.get(address + "/send_chain",headers=headers)
-				chains.append(response._content)
+				mes = {'mine_time': time.time()}
+				response = requests.post(address + "/send_chain",data=json.dumps(mes),headers=headers)
+				chains.append(pickle.loads(response._content))
 		print()
 		print()
-		print(response._content)
+		#print(pickle.loads(response._content))
+		#print(len(pickle.loads(response._content)))
 		max_length = 0
 		for chain in chains:
 			if len(chain) > max_length:
@@ -293,9 +306,9 @@ class node:
 		return longer_chain
 
 	def resolve_conflicts(self):
-		#resolve correct chain
+		print("consesoussss")
 		self.chain.list_blocks=self.valid_chain()
-		return self.auto_run.set()
+		return consesus.set()
 
 #--------------------------------------VIEWS-----------------------------------------------------
 
@@ -323,19 +336,19 @@ class node:
         
 		with open('/Users/tassos/Desktop/22-23/Distributed-Systems-Assignment/transactions /5nodes/transactions' + str(self.id) + '.txt', 'r') as fd:
 			for line in fd:  # go through all lines and make transactions
+					
 				rec, ammount = (line.strip('\n')).split(' ')
-				n=self.id	
-				time.sleep(n)
 				url = 'http://' + str(self.ip) + ':' + str(self.port) + "/create_transaction"
 				payload = {'address': rec[2], 'amount': ammount}  # give data as in cli form, [id, ammount]
 				payload = json.dumps(payload)
 				response = requests.post(url, data=payload,
-                                         headers={'Content-type': 'application/json',
-                                                  'Accept': 'text/plain'})  # hit API
-                # print(response.json())
-			time.sleep(1)  # sleep 1 sec and repeat
+												headers={'Content-type': 'application/json',
+														'Accept': 'text/plain'})  # hit API
+					# print(response.json())
+				time.sleep(1)  # sleep 1 sec and repeat
 
-		return
+		return self.resolve_conflicts()
+
 
 	'''def create_transaction(sender, receiver, signature):
 		#remember to broadcast it

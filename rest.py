@@ -10,6 +10,7 @@ from block import Block
 from flask_cors import CORS
 import pickle
 import time
+from node import consesus
 
 
 
@@ -61,13 +62,13 @@ def register_child():
 @app.route('/broadcast/transaction', methods=['POST'])
 def get_transaction():
     #data = pickle.loads(request.get_data())
-    #n=master.id	
-    #time.sleep(n)
+    n=master.id	
+    time.sleep(n%2)
     data = json.loads(request.get_json())
     if not no_mine.is_set():
         no_mine.wait()
     master.validate_tran(data)
-    print(master.wallet.mybalance())
+    print("balanceeeeee:",master.wallet.mybalance())
     return jsonify({"Broadcast": "Done"}), 200
 
 @app.route('/broadcast/block', methods=['POST'])
@@ -130,9 +131,9 @@ def create():
 def send_chain():
     #data = pickle.loads(request.get_data())
     print("hiiii")
-    master.auto_run.wait()
+    #consesus.clear()
     print("consesous")
-    return pickle.dumps(master.chain.ist_blocks)
+    return pickle.dumps(master.chain.list_blocks)
 
 # run it once fore every node
 
