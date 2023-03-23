@@ -143,7 +143,7 @@ def last_transactions():
 @api.route('/transaction', methods = ['POST'])
 def transaction():
     #turn the data we received from string to int
-    recipient_id = request.json.get('id')
+    recipient_id = str(request.json.get('id'))
     #the node should not be able to send money to itself
     if recipient_id != str(node.id):
         value = request.json.get('amount')
@@ -157,11 +157,13 @@ def transaction():
                     id = peer['id']
                     pub = peer['pub']
 
-    check = node.create_transaction(id,pub,int(value))
-    if (check==True):
-        return jsonify({"message":"SUCCESS"}),200 
-    else: 
-        return jsonify({'message': 'FAILURE'}),400
+        check = node.create_transaction(id,pub,int(value))
+        if (check==True):
+            return jsonify({"message":"SUCCESS"}),200
+        else: 
+            return jsonify({'message': 'FAILURE'}),400
+    else:
+            return jsonify({"message":'Wrong id'}), 400
 
     
 

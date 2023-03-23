@@ -66,6 +66,8 @@ class Node:
 					out.unspent = False
 					amount_sent += out.value
 			#if we have enough money to sent then break
+			print(str(amount_sent)+' balance')
+			print(str(value) + ' value')
 			if amount_sent >= value :
 				break
 		#print(transaction_ins)
@@ -74,9 +76,9 @@ class Node:
 		if amount_sent < value:
 			for transaction in self.wallet.transactions:
 				for out in transaction.transaction_outputs:
-					if out.transactionId in transaction_ins:
+					if out.transactionId in transaction_ids:
 						out.unspent = True
-			#print('passed')
+			print('passed')
 			return False
 			
 		#create Transaction
@@ -97,7 +99,7 @@ class Node:
 				for out in transaction.transaction_outputs:
 					if out.transaction_id in transaction_ids:
 						out.unspent = True
-			#print('passed2')
+			print('passed2')
 			return False
 			
 		return True
@@ -175,10 +177,10 @@ class Node:
 					if self.to_check:
 						mine = self.to_check[0]
 						self.to_check.pop(0)
-						print("ok1")
+						#print("ok1")
 						fin = self.mine_block(mine)
 						if (fin):
-							print("passed2")
+							#print("passed2")
 							break
 						else:
 							self.to_check.insert(0,mine)
@@ -225,7 +227,7 @@ class Node:
 				accepted = True
 
 		if (accepted == True):
-			print("passed0")
+			#print("passed0")
 			with self.lock_chain:
 				if self.validate_block(block):
 					#print("passed1")
@@ -335,7 +337,7 @@ class Node:
 					filter_tr.append(tr)
 
 			if not self.to_check :
-				print("ok")
+				#print("ok")
 				self.active_block.listOfTransactions = deepcopy(filter_tr)
 				return
 			

@@ -25,6 +25,9 @@ def start():
             response = requests.post(address,json=string)
             if response.status_code == 200:
                 print('Transaction completed')
+            else:
+                print('φελουρ')
+                continue
 
 if __name__ == "__main__":
     parser = ArgumentParser(description = "Metrics")
