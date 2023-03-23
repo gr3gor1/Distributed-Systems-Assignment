@@ -26,12 +26,12 @@ class Wallet:
 
 
 	def balance(self):
-		#sum of the UTXOs according to the assignment
 		sum = 0
 		for transaction in self.transactions:
-			for out in transaction.transaction_outputs :
-				if out.unspent and out.recipient == self.public_key:
-					sum += out.value
+			if transaction.receiver_address == self.public_key:
+				sum += transaction.amount
+			else:
+				sum -= transaction.amount
 
 		return sum
 		
