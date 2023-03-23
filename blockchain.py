@@ -6,6 +6,7 @@ class Blockchain:
 
     def add_block(self, block):
         #Add a block to the blockchain.
+        #print('added')
         self.chain.append(block)
 
     def stringify_chain(self):

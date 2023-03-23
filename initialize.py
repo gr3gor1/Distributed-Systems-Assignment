@@ -59,7 +59,7 @@ if __name__ == '__main__':
         #we use this thread in order to stall request
         #we need the request to be made after the server is initialized
         def fun():
-            time.sleep(3)
+            time.sleep(1)
             address = 'http://' + boot_ip + ':' + boot_port + '/registration'
             res = requests.post(address,json={'ip':ip,'port':port,'pub':node.wallet.public_key})
             

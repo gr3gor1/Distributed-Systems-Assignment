@@ -68,15 +68,15 @@ class Node:
 			#if we have enough money to sent then break
 			if amount_sent >= value :
 				break
-		print(transaction_ins)
-		print(amount_sent)
+		#print(transaction_ins)
+		#print(amount_sent)
 		#if we dont we turn the transactions to unspent
 		if amount_sent < value:
 			for transaction in self.wallet.transactions:
 				for out in transaction.transaction_outputs:
 					if out.transactionId in transaction_ins:
 						out.unspent = True
-			print('passed')
+			#print('passed')
 			return False
 			
 		#create Transaction
@@ -89,7 +89,7 @@ class Node:
 			transactionIn=transaction_ins,
 			NBCs = amount_sent
 		)
-		print('passed1')
+		#print('passed1')
 		transaction.sign_transaction(self.wallet.private_key)
 
 		if (self.broadcast_transaction(transaction) != True):
@@ -97,7 +97,7 @@ class Node:
 				for out in transaction.transaction_outputs:
 					if out.transaction_id in transaction_ids:
 						out.unspent = True
-			print('passed2')
+			#print('passed2')
 			return False
 			
 		return True
@@ -172,10 +172,13 @@ class Node:
 			self.lock_block.release()
 			while True:
 				with self.lock_temp:
-					if(self.to_check):
+					if self.to_check:
 						mine = self.to_check[0]
+						self.to_check.pop(0)
+						print("ok1")
 						fin = self.mine_block(mine)
 						if (fin):
+							print("passed2")
 							break
 						else:
 							self.to_check.insert(0,mine)
@@ -222,9 +225,11 @@ class Node:
 				accepted = True
 
 		if (accepted == True):
+			print("passed0")
 			with self.lock_chain:
 				if self.validate_block(block):
-					self.blockchain.chain.add_block(block)
+					#print("passed1")
+					self.blockchain.add_block(block)
 
 	def validate_block(self,block):
 		condition1 = False
@@ -242,7 +247,7 @@ class Node:
 
 	def valid_chain(self, chain):
 		#check if the chain we received is valid after a conflict
-		chainOfBlocks = chain
+		chainOfBlocks = chain.chain
 		condition1 = False
 		condition2 = False
 
@@ -274,22 +279,23 @@ class Node:
 			thread = Thread(target=dummy,args=(peer,blockchains))
 			threads.append(thread)
 			thread.start()
-			time.sleep(2)
+			
 			thread.join()
 
 		winner_length = 0
-		winner = []
+		winner = None
 		for chain in blockchains:
-			blockchain_length = len(chain)
+			blockchain_length = len(chain.chain)
 			self_length = len(self.blockchain.chain)
-			if len(winner) == 0:
+			if winner:
+				winner_length = len(winner.chain)
 				if (self.valid_chain(chain) & (blockchain_length>winner_length)):
 					winner = chain
-					winner_length = len(winner)
+					winner_length = len(winner.chain)
 			else:
 				if (self.valid_chain(chain) & (blockchain_length>self_length)):
 					winner = chain
-					winner_length = len(winner)
+					winner_length = len(winner.chain)
 
 		if winner:
 			self.mining_flag = True
@@ -297,8 +303,8 @@ class Node:
 				index = len(winner.chain) - 1
 				while(index>0 & ((winner.chain[index].hash != self.blockchain.chain[-1].hash))):
 					index = index - 1
-
-				for item in self.blockchain.chain[index+1:].reverse():
+				a = reversed(self.blockchain.chain[index+1:]) 
+				for item in a:
 					self.to_check.insert(0,item)
 
 				for item in winner.chain[index+1:]:
@@ -312,12 +318,14 @@ class Node:
 	def check_doubles(self,block):
 		#check for double transactions between added block and blocks you still havent check
 		with self.lock_block:
+			#print(len(self.to_check))
+			#print(len(self.active_block.listOfTransactions))
 			#flatten list of transactions in unchecked blocks
 			transactions = list(itertools.chain.from_iterable([ublock.listOfTransactions for ublock in self.to_check]))
 
 			if (self.active_block):
 				transactions.extend(self.active_block.listOfTransactions)
-
+			#print(len(transactions))
 			self.active_block.listOfTransactions = []
 
 			filter_tr = []
@@ -326,7 +334,8 @@ class Node:
 				if(tr not in block.listOfTransactions):
 					filter_tr.append(tr)
 
-			if not self.to_check:
+			if not self.to_check :
+				print("ok")
 				self.active_block.listOfTransactions = deepcopy(filter_tr)
 				return
 			
@@ -339,8 +348,9 @@ class Node:
 			if (index * self.CAPACITY) < len(filter_tr):
 				self.active_block.listOfTransactions = deepcopy(filter_tr[(index * self.CAPACITY):])
 
-			for item in range(len(self.to_check)-index):
+			for i in range((len(self.to_check)-index)):
 				self.to_check.pop()
+
 		return
 
 	#this function will be used to learn the final ring of the bootstrap node

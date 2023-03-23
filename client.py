@@ -100,11 +100,8 @@ def application():
             
             if response.status_code == 200:
                 print('Transaction completed')
-            
-            if response.status_code == 400:
-                print("There is no public address for this node's id")
 
-            if response.status_code == 401:
+            if response.status_code == 400:
                 print("Couldnt create transaction")
 
 

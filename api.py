@@ -60,7 +60,7 @@ def learn_chain():
 #send local chain to resolve conflicts
 @api.route('/conflict_chain', methods = ['GET'])
 def conflict_chain():
-    return pickle.dumps(node.blockchain.chain)
+    return pickle.dumps(node.blockchain)
 
 #validate posted transaction
 @api.route('/valid_transaction',methods=['POST'])
@@ -114,10 +114,11 @@ def broadcast_block():
                     node.check_doubles(block)
                     #continue mining
                     node.mining_flag = False
-                    return jsonify({'status':'SUCCESS'}), 200
             else:
                 node.lock_chain.release()
                 return jsonify({'status':'REJECTED'}), 400
+            
+    return jsonify({'status':"SUCCESS"}), 200
 
 #show balance of the client in the local node
 @api.route('/money',methods = ['GET'])
@@ -146,19 +147,21 @@ def transaction():
     #the node should not be able to send money to itself
     if recipient_id != str(node.id):
         value = request.json.get('amount')
-
+        id = None
+        pub = None
         #then we search for info about the node with the
         #id that is provided from the client
         for peer in node.ring:
             if str(peer['id']) == recipient_id:
                 if (peer['pub']!=None):
-                    check = node.create_transaction(peer['id'],peer['pub'],int(value))
-                    if (check==True):
-                        return jsonify({"message":"SUCCESS"}),200 
-                        break
-                    else: 
-                        return jsonify({'message': 'FAILURE'}),401
-                else:
-                    return jsonify({'message': 'FAILURE'}), 400
+                    id = peer['id']
+                    pub = peer['pub']
+
+    check = node.create_transaction(id,pub,int(value))
+    if (check==True):
+        return jsonify({"message":"SUCCESS"}),200 
+    else: 
+        return jsonify({'message': 'FAILURE'}),400
+
     
 
