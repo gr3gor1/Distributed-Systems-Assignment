@@ -11,11 +11,15 @@ from Crypto.Hash import SHA
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 import binascii
+import time
+from random import randint
+import sys
 
-CAPACITY = 2
+CAPACITY = 5
 MINING_DIFFICULTY = 4
 
 headers={'Content-type':'application/json','Accept':'text/plain'}
+
 
 class node:
 	def __init__(self, id, bootstrap, ip, port, blockchain, total_nodes):
@@ -25,19 +29,21 @@ class node:
 		self.ip = ip
 		self.port = port 
 		self.blockchain = blockchain
+		self.event = threading.Event()
 		self.total_nodes = total_nodes
 		self.wallet = wallet()
 		self.ring = []   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 		if self.bootstrap == 1:
+			self.event.set()
 			self.blockchain.create_genesis_block(self.wallet.address, 500)
 			self.ring.append({'id': self.id, 
 							  'ip': self.ip, 
 							  'port': self.port, 
 							  'public_key': self.wallet.public_key})
 		else:
+			self.event.clear()
 			thread = threading.Thread(target = self.share_node_info)
 			thread.start()
-			#thread.join()
 
 	def share_node_info(self):
 		data = {'id': self.id, 
@@ -52,7 +58,7 @@ class node:
 #--------------------------------------NEW BLOCKS/TRANSACTIONS----------------------------------------
 
 	def create_new_block(self, first_transaction):
-		print('About to mine...')
+		#print('About to mine...')
 		new_block = self.mine_block(first_transaction)
 		if new_block.confirmed:
 			self.broadcast_block(new_block)
@@ -82,6 +88,7 @@ class node:
 					transaction_inputs.append(utxo['id'])
 					if sent_amount >= amount:
 						flag = True
+						not_to_be_spent.extend(self.wallet.UTXOs[i+1:])
 						break
 				else:
 					not_to_be_spent.append(self.wallet.UTXOs[i])
@@ -120,33 +127,36 @@ class node:
 	def add_transaction_to_block(self, transaction, block):
 		#if enough transactions  mine
 		if len(block.transactions) == CAPACITY:
-			print("00000000")
 			self.create_new_block(first_transaction = transaction)
 		else:
-			print("1111111")
 			block.add_transaction(transaction)
-		print("Node:",self.id, "Time:", datetime.now())
 
 #--------------------------------------BROADCASTS-----------------------------------------------------
 
 	def broadcast_transaction(self, transaction):
-		if transaction.sender_address == "0":
+		'''if transaction.sender_address == "0":
 			print('broadcasting initial transaction...')
 		else:
-			print('broadcasting transaction...', datetime.now())
+			print('broadcasting transaction...', datetime.now())'''
 		#cnt = 0
 		def broadcast(transaction):
 			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/transaction'
 			response = requests.post(address, data=pickle.dumps(transaction))
 			if response.status_code != 200:
+				#print(address)
 				#cnt += 1
 				print("Failed to broadcast a transaction!")
 
+		threads = []
 		for node in self.ring:
 			if node['id'] != self.id:
 				thread = threading.Thread(target = broadcast, args=(transaction,))
+				threads.append(thread)
 				thread.start()
 		
+		for thread in threads:
+			thread.join()
+
 		return True
 	
 	def broadcast_block(self, block):
@@ -159,11 +169,16 @@ class node:
 				#cnt += 1
 				print("Failed to broadcast a block!")
 
+		threads = []
 		for node in self.ring[::-1]:
 			if node['id'] != self.id:
 				thread = threading.Thread(target = broadcast, args=(block,))
+				threads.append(thread)
 				thread.start()
 		
+		for thread in threads:
+			thread.join()
+
 		return True
 
 	def broadcast_ring(self):
@@ -175,14 +190,14 @@ class node:
 					return False
 		return True
 	
-	def broadcast_chain(self):
+	'''def broadcast_chain(self):
 		for node in self.ring:
 			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/chain'
 			if node['id'] != self.id:
 				response = requests.post(address, data=json.dumps(self.blockchain.chain))
 				if response.status_code != 200:
 					return False
-		return True
+		return True'''
 
 	def broadcast_init_finished(self):
 		def broadcast():
@@ -192,17 +207,31 @@ class node:
 				#cnt += 1
 				print("Failed to broadcast that initialization finished!")
 
+		threads = []
 		for node in self.ring:
 			if node['id'] != self.id:
 				thread = threading.Thread(target = broadcast)
+				threads.append(thread)
 				thread.start()
+		
+		for thread in threads:
+			thread.join()
+
+		return True
+
+
+	def broadcast_end_of_transaction(self, node_id):
+		for node in self.ring:
+			if node['id'] == node_id:
+				address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/transaction_finished'
+				response = requests.post(address, data=json.dumps({"data": "Transaction finished!"}))
+				if response.status_code != 200:
+					#cnt += 1
+					print("Failed to broadcast that the transaction ended!")
+		
 
 
 #--------------------------------------VALIDATIONS-----------------------------------------------------
-
-	def validate_transaction(self, transaction):
-		#use of signature and NBCs balance
-		return transaction.verify_transaction(transaction.sender_address)
 
 	def verify_signature(self, transaction):
         # Load public key and verify message
@@ -214,6 +243,9 @@ class node:
 
 	def valid_proof(self, proof, difficulty=MINING_DIFFICULTY):
 		return proof[:difficulty] == difficulty*'0'
+	
+	def validate_block(self, block):
+		return self.valid_proof(block.hash) and self.blockchain.chain[-1].hash == block.previous_hash
 
 	def validate_chain(self):
 		for i in range(1, len(self.blockchain.chain)):
@@ -237,11 +269,11 @@ class node:
 	def proof_of_work(self, block, difficulty=MINING_DIFFICULTY):
 		proof = block.myHash()
 		chain = len(self.blockchain.chain)
-		print('started mining:', block.nonce, datetime.now())
+		#print('started mining:', block.nonce, datetime.now())
 		while proof[:difficulty] != "0"*difficulty and len(self.blockchain.chain) == chain:
 			block.nonce += 1
 			proof = block.myHash()
-		print('stopped mining:', block.nonce, datetime.now(), proof)
+		#print('stopped mining:', block.nonce, datetime.now(), proof)
 		block.hash = proof
 		if self.valid_proof(proof):
 			block.confirmed = True
@@ -251,44 +283,85 @@ class node:
 #--------------------------------------CONSENSUS-----------------------------------------------------
 	def valid_chain(self):
 		#check for the longer chain across all nodes
+		def get_chains():
+			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/send_chain'
+			response = requests.get(address)
+			chains.append(pickle.loads(response._content))
+
 		chains = []
+		threads = []
 		for node in self.ring:
 			if node['id'] != self.id:
-				address = 'http://' + node['ip'] + ':' + node['port']
-				response = requests.get(address + "/send_chain")
-				chains.append(response._content)
+				thread = threading.Thread(target=get_chains)
+				threads.append(thread)
+				thread.start()
+
+		for thread in threads:
+			thread.join()
 		
 		max_length = 0
 		for chain in chains:
 			if len(chain) > max_length:
 				max_length = len(chain)
-				longer_chain = chain
-		
-		return longer_chain
+				longest_chain = chain
+
+		return longest_chain
 
 	def resolve_conflicts(self):
 		#resolve correct chain
+		def broadcast_chain():
+			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/chain'
+			response = requests.post(address, data=pickle.dumps(valid_chain))
+			if response.status_code != 200:
+				print('Failed to broadcast the longest chain (consensus)!')
+
 		valid_chain = self.valid_chain()
+		threads = []
 		for node in self.ring:
 			if node['id'] != self.id:
-				address = 'http://' + node['ip'] + ':' + node['port']
-				response = requests.post(address + "/send_chain", data=json.dumps(valid_chain))
-				if response.status_code != 200:
-					return False
+				thread = threading.Thread(target=broadcast_chain)
+				threads.append(thread)
+				thread.start()
+
+		for thread in threads:
+			thread.join()
+				
 		return True
 
 #--------------------------------------VIEWS-----------------------------------------------------
 
 	def read_transactions(self):
-		transactions = []	
+		transactions = []
 		with open("transactions/{}nodes/transactions{}.txt".format(self.total_nodes, self.id), "r") as file:
 			content = file.readlines()
 			for line in content:
 				id, amount = line.split()
 				transactions.append([int(id[2]), int(amount)])
-			print(transactions)
-		return transactions
+	
+		flag = False
+		time.sleep(self.id*0.1)
+		for i, transaction in enumerate(transactions):
+			for node in self.ring:
+				if transaction[0] == node['id']:
+					new_transaction = self.create_transaction(node['public_key'],  transaction[1])
+					if not new_transaction:
+						flag = True
+						break
+					self.broadcast_transaction(new_transaction)
+					self.add_transaction_to_block(new_transaction, self.blockchain.chain[-1])
+					#next = randint(0,4)
+					#self.broadcast_end_of_transaction(node_id = next)
+					break
+			time.sleep(1)
+			#if flag:
+				#break
 
+			#if i==0:
+				#print('ENDDDD')
+				#break
+			#self.event.clear()
+
+		return transactions
 
 	def view_transactions(self):
 		return self.blockchain.chain[-1].transactions

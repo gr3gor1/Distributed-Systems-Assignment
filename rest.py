@@ -26,26 +26,6 @@ blockchain = Blockchain()
 
 #.......................................................................................
 
-@app.route('/', methods=['GET'])
-
-def welcome():
-    wl = '''
-        <html>
-        <head><title>Blockchain</title></head>
-        <body>
-        <h1>Blockchain</h1>
-        Welcome to our Blockchain Page
-        <br>
-            <ul>
-            <li>For Mining Blocks Visit : <a href="http://127.0.0.1:5000/mineblock">http://127.0.0.1:5000/mineblock</a></li>
-            <li>For Viewing the Blockchain Visit : <a href="http://127.0.0.1:5000/getchain">http://127.0.0.1:5000/getchain</a></li>
-            <li>For Validating Blockchain Visit : <a href="http://127.0.0.1:5000/validate">http://127.0.0.1:5000/validate</a></li>
-            </ul>
-        </body>
-        </html>
-        '''
-    return wl
-
 #send info to bootstrap
 
 @app.route('/get_ring_info', methods=['POST'])
@@ -63,35 +43,24 @@ def get_info():
             else:
                 print('Failed to broadcast the genesis block.')
             
+            time.sleep(1)
             initial_transaction = node_.create_transaction(node_.wallet.address, node_.total_nodes*100, initial_transaction=True)
             node_.broadcast_transaction(initial_transaction)
             node_.add_transaction_to_block(initial_transaction, node_.blockchain.chain[-1])
 
             for node in node_.ring:
                 if node['id'] != node_.id:
-                    print()
-                    print(1)
                     new_transaction = node_.create_transaction(node['public_key'], 100)
-                    print()
-                    print(2)
                     node_.broadcast_transaction(new_transaction)
-                    print()
-                    print()
-                    print(len(node_.blockchain.chain), node_.blockchain.chain[-1].transactions)
-                    print()
-                    print()
-                    print()
-                    print(3)
                     node_.add_transaction_to_block(new_transaction, node_.blockchain.chain[-1])
             
-            time.sleep(1)
+            print('END OF INITIALIZATION')
+            time.sleep(2)
             node_.broadcast_init_finished()
-            transactions = node_.read_transactions()
+            node_.read_transactions()
 
-            #print(len(node_.blockchain.chain), node_.blockchain.chain[-1].hash)
-
-            #print(len(node_.blockchain.chain))
-            #print(node_.blockchain.chain[-1].hash)
+            time.sleep(1)
+            node_.resolve_conflicts()
 
         return jsonify(data), 200
     else:
@@ -118,11 +87,11 @@ def get_transaction():
     data = pickle.loads(request.get_data())
     if data.sender_address == "0":
         node_.add_transaction_to_block(data, node_.blockchain.chain[-1])
-        print()
+        '''print()
         print()
         print(len(node_.blockchain.chain), node_.blockchain.chain[-1].transactions)
         print()
-        print()
+        print()'''
         
         new_utxos = []
         for utxo in node_.wallet.UTXOs:
@@ -139,6 +108,11 @@ def get_transaction():
 
     else:
         if node_.verify_signature(data):
+            '''print()
+            print(node_.id)
+            print(data.transaction_inputs)
+            print(data.transaction_outputs)
+            print()'''
             node_.add_transaction_to_block(data, node_.blockchain.chain[-1])
             new_utxos = []
             for utxo in node_.wallet.UTXOs:
@@ -162,30 +136,54 @@ def get_transaction():
    
 @app.route('/broadcast/block', methods=['POST'])
 def get_block():
-    print('block broadcasted:', datetime.now())
+    #print('block broadcasted:', datetime.now())
     data = pickle.loads(request.get_data())
-    node_.blockchain.add_block(data)
+    if node_.validate_block(data) or data.previous_hash ==  "1":
+        node_.blockchain.add_block(data)
+        return jsonify({"Broadcast": "Done"}), 200
+    else:
+        node_.resolve_conflicts()
+        return jsonify({"Broadcast": "Done"}), 200
     #print(len(node_.blockchain.chain), node_.blockchain.chain[-1].hash)
-    return jsonify({"Broadcast": "Done"}), 200
-
-#broadcast chain        
-   
-@app.route('/broadcast/chain', methods=['POST'])
-def get_chain():
-    data = request.get_json()
-    node_.blockchain.chain = data
-    return jsonify(data), 200
 
 #broadcast init finished
 
 @app.route('/broadcast/init_finished', methods = ['POST'])
 def get_init_finished():
     data = json.loads(request.get_data())
-    print(data)
+    #print(data)
     if data != None:
-        transactions = node_.read_transactions()
+        node_.read_transactions()
+        #print(transactions)
+                
     return jsonify(data), 200
+
+#broadcast chain (consensus)    
    
+@app.route('/broadcast/chain', methods=['POST'])
+def get_chain():
+    data = pickle.loads(request.get_data())
+    node_.blockchain.chain = data
+    return jsonify({"Consensus": "Done"}), 200
+
+#get longest chain (consensus)
+
+@app.route('/send_chain', methods = ['GET'])
+def send_chain():
+    return pickle.dumps(node_.blockchain.chain), 200
+
+#broadcast transaction finished
+   
+'''@app.route('/broadcast/transaction_finished', methods = ['POST'])
+def get_transaction_finished():
+    data = json.loads(request.get_data())
+    #print(data)
+    if data != None:
+        node_.event.set()
+        #print(transactions)
+                
+    return jsonify(data), 200
+
 #get the balance of a node
 
 @app.route('/balance', methods=['GET'])
@@ -208,7 +206,7 @@ def get_transactions_of_the_last_block():
 def get_transactions():
     transactions = blockchain.transactions
     response = {'transactions': transactions}
-    return jsonify(response), 200
+    return jsonify(response), 200'''
 
 # run it once fore every node
 
@@ -228,11 +226,18 @@ if __name__ == '__main__':
     #thread.start()
     app.run(host=args.ip, port=args.port, debug=True, use_reloader=False)
 
-    print('Length of blockchain: ', len(node_.blockchain.chain))
+    '''print('Length of blockchain: ', len(node_.blockchain.chain))
     for i, block in enumerate(node_.blockchain.chain):
         print('Block {}:'.format(i))
         print('Previous hash:', block.previous_hash)
-        print('Current hash:', block.hash)
+        print('Current hash:', block.hash)'''
 
+
+    print('Length of blockchain: ', len(node_.blockchain.chain))
     print('Balance : ', node_.wallet.balance())
-    print('UTXOs : ', node_.wallet.UTXOs)
+    #print('UTXOs : ', node_.wallet.UTXOs)
+    print(len(node_.wallet.UTXOs))
+    total = 0
+    for utxo in node_.wallet.UTXOs:
+        total+= utxo['amount']
+    print(total)

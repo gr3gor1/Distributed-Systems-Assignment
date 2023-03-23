@@ -1,14 +1,21 @@
+import threading
+from random import randint
 
-def read_transactions(total_nodes, id):
-    transactions = []
-    with open("transactions/{}nodes/transactions{}.txt".format(total_nodes, id), "r") as file:
-        content = file.readlines()
-        for line in content:
-            id, amount = line.split()
-            transactions.append([int(id[2]), int(amount)])
-    return transactions
+b = threading.Lock()
 
-    
-transactions = read_transactions(5, 0)
+def a():
+    b.acquire()
+    print(0)
+    b.release()
 
-print(transactions)
+threads = []
+for i in range(5):
+    thread = threading.Thread(target=a)
+    threads.append(thread)
+    thread.start()
+
+
+#for thread in threads:
+    #thread.join()
+
+print(1)
