@@ -9,6 +9,7 @@ from blockchain import Blockchain
 from block import Block
 from flask_cors import CORS
 import pickle
+import time
 
 
 
@@ -60,6 +61,8 @@ def register_child():
 @app.route('/broadcast/transaction', methods=['POST'])
 def get_transaction():
     #data = pickle.loads(request.get_data())
+    n=master.id	
+    time.sleep(n)
     data = json.loads(request.get_json())
     if not no_mine.is_set():
         no_mine.wait()
@@ -126,9 +129,8 @@ def create():
 @app.route('/send_chain', methods=['GET'])
 def send_chain():
     #data = pickle.loads(request.get_data())
+    print("hiiii")
     master.auto_run.wait()
-    no_mine.set()
-    master.chain.mine.set()
     print("consesous")
     return pickle.dumps(master.chain.ist_blocks)
 

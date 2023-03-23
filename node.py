@@ -251,6 +251,7 @@ class node:
 		if  block['previous_hash'] != self.chain.list_blocks[-1].myHash():
 			print("valid block -> not ok")
 			no_mine.set()
+			self.auto_run.wait()
 			self.chain.mine.set()
 			self.consesus = threading.Event()
 			self.consesus.clear()
@@ -321,7 +322,8 @@ class node:
 		with open('/Users/tassos/Desktop/22-23/Distributed-Systems-Assignment/transactions /5nodes/transactions' + str(self.id) + '.txt', 'r') as fd:
 			for line in fd:  # go through all lines and make transactions
 				rec, ammount = (line.strip('\n')).split(' ')
-				#print(rec)
+				n=self.id	
+				time.sleep(n)
 				url = 'http://' + str(self.ip) + ':' + str(self.port) + "/create_transaction"
 				payload = {'address': rec[2], 'amount': ammount}  # give data as in cli form, [id, ammount]
 				payload = json.dumps(payload)
