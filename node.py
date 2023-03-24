@@ -350,7 +350,7 @@ class Node:
 			if (index * self.CAPACITY) < len(filter_tr):
 				self.active_block.listOfTransactions = deepcopy(filter_tr[(index * self.CAPACITY):])
 
-			for index in range((len(self.to_check)-index)):
+			for i in range((len(self.to_check)-index)):
 				self.to_check.pop()
 
 		return

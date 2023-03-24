@@ -209,8 +209,89 @@ def init5():
 
     return '',200
 
+@api.route('/ten_nodes', methods=['GET'])
+def ten_nodes():
+    def dummy(peer,ans):
+        address = 'http://' + peer['ip'] + ':' + str(peer['port']) + '/init10'
+        response = requests.get(address)
+        ans.append(response.status_code)
 
+    ans = []
+    for peer in node.ring:
+        thread = Thread(target=dummy,args=(peer,ans))
+        thread.start()
+    
+    for i in ans:
+        if i != 200:
+            return 300
+        
+    return json.dumps({'ans':ans}) , 200
 
+@api.route('/init10',methods = ['GET'])
+def init10():
+    id = node.id
+    credentials = None
+    for cred in node.ring:
+        if str(cred['id']) == str(id):
+            credentials = cred
+           
+    address =  'http://' + credentials['ip'] + ':' + str(credentials['port']) + '/transaction'
+    file = os.path.join('/home/user/10nodes','transactions'+str(node.id)+'.txt')
+    with open(file,'r') as text:
+        for line in text:
+            line = line.split()
+            recipient = int(line[0][2])
+            amount = int(line[1])
+            string = {'id':recipient,'amount':amount}
+            response = requests.post(address,json=string)
+            if response.status_code == 200:
+                print('Transaction completed')
+            else:
+                print('Failure')
+
+    return '',200
+
+@api.route('/temp', methods=['GET'])
+def temp():
+    def dummy(peer,ans):
+        address = 'http://' + peer['ip'] + ':' + str(peer['port']) + '/temp_init'
+        response = requests.get(address)
+        ans.append(response.status_code)
+
+    ans = []
+    for peer in node.ring:
+        thread = Thread(target=dummy,args=(peer,ans))
+        thread.start()
+    
+    for i in ans:
+        if i != 200:
+            return 300
+        
+    return json.dumps({'ans':ans}) , 200
+
+@api.route('/temp_init',methods = ['GET'])
+def temp_init():
+    id = node.id
+    credentials = None
+    for cred in node.ring:
+        if str(cred['id']) == str(id):
+            credentials = cred
+           
+    address =  'http://' + credentials['ip'] + ':' + str(credentials['port']) + '/transaction'
+    file = os.path.join('/home/user/5small','transactions'+str(node.id)+'.txt')
+    with open(file,'r') as text:
+        for line in text:
+            line = line.split()
+            recipient = int(line[0][2])
+            amount = int(line[1])
+            string = {'id':recipient,'amount':amount}
+            response = requests.post(address,json=string)
+            if response.status_code == 200:
+                print('Transaction completed')
+            else:
+                print('Failure')
+
+    return '',200
 
 
 

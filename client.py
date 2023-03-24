@@ -82,6 +82,12 @@ def application():
                         'name':'5 nodes experiment'
                     },
                     {
+                        'name':'10 nodes experiment'
+                    },
+                    {
+                        'name':"Dummy experiment"
+                    },
+                    {
                         'name':'Terminate client'
                     }
                 ]
@@ -142,6 +148,14 @@ def application():
 
         if action[0] == '5 nodes experiment':
             address = 'http://' + ip + ':' + port + '/five_nodes'
+            response = requests.get(address)
+
+        if action[0] == '10 nodes experiment':
+            address = 'http://' + ip + ':' + port + '/ten_nodes'
+            response = requests.get(address)
+
+        if action[0] == 'Dummy experiment':
+            address = 'http://' + ip + ':' + port + '/temp'
             response = requests.get(address)
 
             if response.status_code == 200:
