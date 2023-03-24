@@ -32,19 +32,16 @@ class node:
 		self.ip = ip
 		self.port = port 
 		self.blockchain = blockchain
-		self.event = threading.Event()
 		self.total_nodes = total_nodes
 		self.wallet = wallet()
 		self.ring = []   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 		if self.bootstrap == 1:
-			self.event.set()
 			self.blockchain.create_genesis_block(self.wallet.address, 500)
 			self.ring.append({'id': self.id, 
 							  'ip': self.ip, 
 							  'port': self.port, 
 							  'public_key': self.wallet.public_key})
 		else:
-			self.event.clear()
 			thread = threading.Thread(target = self.share_node_info)
 			thread.start()
 

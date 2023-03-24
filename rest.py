@@ -68,7 +68,8 @@ def get_info():
             node_.resolve_conflicts()
             print()
             print()
-            print(len(statistics["Throughput"]), len(statistics["Block time"]), np.mean(statistics["Throughput"]), np.mean(statistics["Block time"]))
+            print("Throughput: ",np.mean(statistics["Throughput"]))
+            print("Block time:", np.mean(statistics["Block time"]))
             print()
             print()
 
