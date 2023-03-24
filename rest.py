@@ -5,7 +5,7 @@ import time
 time.clock = time.time
 
 from block import Block
-from node import node
+from node import node, statistics
 from blockchain import Blockchain
 from wallet import wallet
 from transaction import Transaction
@@ -13,11 +13,7 @@ import json
 import pickle   
 import threading
 from datetime import datetime 
-
-
-### JUST A BASIC EXAMPLE OF A REST API WITH FLASK
-
-
+import numpy as np
 
 app = Flask(__name__)
 CORS(app)
@@ -46,15 +42,21 @@ def get_info():
             print("Initializing...")
             
             time.sleep(1)
+            start = time.time()
             initial_transaction = node_.create_transaction(node_.wallet.address, node_.total_nodes*100, initial_transaction=True)
             node_.broadcast_transaction(initial_transaction)
             node_.add_transaction_to_block(initial_transaction, node_.blockchain.chain[-1])
+            end = time.time()
+            statistics["Throughput"].append(end-start)
 
             for node in node_.ring:
                 if node['id'] != node_.id:
+                    start = time.time()
                     new_transaction = node_.create_transaction(node['public_key'], 100)
                     node_.broadcast_transaction(new_transaction)
                     node_.add_transaction_to_block(new_transaction, node_.blockchain.chain[-1])
+                    end = time.time()
+                    statistics["Throughput"].append(end-start)
             
             time.sleep(2)
             print('End of initialization!')
@@ -64,6 +66,11 @@ def get_info():
 
             time.sleep(2)
             node_.resolve_conflicts()
+            print()
+            print()
+            print(len(statistics["Throughput"]), len(statistics["Block time"]), np.mean(statistics["Throughput"]), np.mean(statistics["Block time"]))
+            print()
+            print()
 
         return jsonify(data), 200
     else:
@@ -90,12 +97,6 @@ def get_transaction():
     data = pickle.loads(request.get_data())
     if data.sender_address == "0":
         node_.add_transaction_to_block(data, node_.blockchain.chain[-1])
-        '''print()
-        print()
-        print(len(node_.blockchain.chain), node_.blockchain.chain[-1].transactions)
-        print()
-        print()'''
-        
         new_utxos = []
         for utxo in node_.wallet.UTXOs:
             flag = True
@@ -111,11 +112,6 @@ def get_transaction():
 
     else:
         if node_.verify_signature(data):
-            '''print()
-            print(node_.id)
-            print(data.transaction_inputs)
-            print(data.transaction_outputs)
-            print()'''
             node_.add_transaction_to_block(data, node_.blockchain.chain[-1])
             new_utxos = []
             for utxo in node_.wallet.UTXOs:
@@ -133,7 +129,6 @@ def get_transaction():
         else:
             print('Invalid signature')
             return jsonify({"Broadcast": "Failed"}), 400
-
 
 #broadcast block        
    
@@ -175,41 +170,16 @@ def get_chain():
 def send_chain():
     return pickle.dumps(node_.blockchain.chain), 200
 
-#broadcast transaction finished
-   
-'''@app.route('/broadcast/transaction_finished', methods = ['POST'])
-def get_transaction_finished():
+#broadcast statistics
+
+@app.route('/broadcast/statistics', methods = ['POST'])
+def get_statistics():
     data = json.loads(request.get_data())
-    #print(data)
     if data != None:
-        node_.event.set()
-        #print(transactions)
-                
-    return jsonify(data), 200
+        statistics["Throughput"].extend(data["Throughput"])
+        statistics["Block time"].extend(data["Block time"])
 
-#get the balance of a node
-
-@app.route('/balance', methods=['GET'])
-def get_balance():
-    balance = node_.wallet.balance()
-    response = {'Balance': balance}
-    return jsonify(response), 200
-
-#get the transactions of the last confirmed block of the blockchain
-
-@app.route('/transactions', methods=['GET'])
-def get_transactions_of_the_last_block():
-    transactions = node_.chain[-1].transactions
-    response = {'Transactions': transactions}
-    return jsonify(response), 200
-
-# get all transactions in the blockchain
-
-@app.route('/transactions/get', methods=['GET'])
-def get_transactions():
-    transactions = blockchain.transactions
-    response = {'transactions': transactions}
-    return jsonify(response), 200'''
+    return jsonify({"Statistics": "Taken"}), 200
 
 # run it once fore every node
 
@@ -225,8 +195,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     node_ = node(args.id, args.bootstrap, args.ip, args.port, blockchain, args.nodes)
-    #thread = threading.Thread(target=app.run(host=args.ip, port=args.port, debug=True, use_reloader=False))
-    #thread.start()
     app.run(host=args.ip, port=args.port, debug=True, use_reloader=False)
 
     '''print('Length of blockchain: ', len(node_.blockchain.chain))

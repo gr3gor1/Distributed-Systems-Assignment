@@ -18,6 +18,9 @@ import sys
 CAPACITY = 5
 MINING_DIFFICULTY = 4
 
+statistics = {"Throughput": [],
+			  "Block time": []}
+
 headers={'Content-type':'application/json','Accept':'text/plain'}
 
 
@@ -134,17 +137,10 @@ class node:
 #--------------------------------------BROADCASTS-----------------------------------------------------
 
 	def broadcast_transaction(self, transaction):
-		'''if transaction.sender_address == "0":
-			print('broadcasting initial transaction...')
-		else:
-			print('broadcasting transaction...', datetime.now())'''
-		#cnt = 0
 		def broadcast(transaction):
 			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/transaction'
 			response = requests.post(address, data=pickle.dumps(transaction))
 			if response.status_code != 200:
-				#print(address)
-				#cnt += 1
 				print("Failed to broadcast a transaction!")
 
 		threads = []
@@ -161,12 +157,10 @@ class node:
 	
 	def broadcast_block(self, block):
 		#print('broadcasting mined block...')
-		#cnt = 0
 		def broadcast(block):
 			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/block'
 			response = requests.post(address, data=pickle.dumps(block))
 			if response.status_code != 200:
-				#cnt += 1
 				print("Failed to broadcast a block!")
 
 		threads = []
@@ -189,22 +183,12 @@ class node:
 				if response.status_code != 200:
 					return False
 		return True
-	
-	'''def broadcast_chain(self):
-		for node in self.ring:
-			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/chain'
-			if node['id'] != self.id:
-				response = requests.post(address, data=json.dumps(self.blockchain.chain))
-				if response.status_code != 200:
-					return False
-		return True'''
 
 	def broadcast_init_finished(self):
 		def broadcast():
 			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/init_finished'
 			response = requests.post(address, data=json.dumps({"data": "Initialization finished, start reading transactions!"}))
 			if response.status_code != 200:
-				#cnt += 1
 				print("Failed to broadcast that initialization finished!")
 
 		threads = []
@@ -219,16 +203,12 @@ class node:
 
 		return True
 
+	def broadcast_statistics(self):
+		address = 'http://' + str(self.ring[0]['ip']) + ':' + str(self.ring[0]['port']) + '/broadcast/statistics'
+		response = requests.post(address, data=json.dumps(statistics))
+		if response.status_code != 200:
+			print("Failed to broadcast statistics!")
 
-	def broadcast_end_of_transaction(self, node_id):
-		for node in self.ring:
-			if node['id'] == node_id:
-				address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/transaction_finished'
-				response = requests.post(address, data=json.dumps({"data": "Transaction finished!"}))
-				if response.status_code != 200:
-					#cnt += 1
-					print("Failed to broadcast that the transaction ended!")
-		
 
 
 #--------------------------------------VALIDATIONS-----------------------------------------------------
@@ -270,12 +250,15 @@ class node:
 		proof = block.myHash()
 		chain = len(self.blockchain.chain)
 		#print('started mining:', block.nonce, datetime.now())
+		start = time.time()
 		while proof[:difficulty] != "0"*difficulty and len(self.blockchain.chain) == chain:
 			block.nonce += 1
 			proof = block.myHash()
 		#print('stopped mining:', block.nonce, datetime.now(), proof)
+		end = time.time()
 		block.hash = proof
 		if self.valid_proof(proof):
+			statistics["Block time"].append(end-start)
 			block.confirmed = True
 		block.nonce = 0
 		return proof
@@ -342,22 +325,20 @@ class node:
 		for i, transaction in enumerate(transactions):
 			for node in self.ring:
 				if transaction[0] == node['id']:
+					start = time.time()
 					new_transaction = self.create_transaction(node['public_key'],  transaction[1])
 					if not new_transaction:
 						break
 					self.broadcast_transaction(new_transaction)
 					self.add_transaction_to_block(new_transaction, self.blockchain.chain[-1])
-					#next = randint(0,4)
-					#self.broadcast_end_of_transaction(node_id = next)
+					end = time.time()
+					statistics["Throughput"].append(end-start)
 					break
-			time.sleep(1)
-			#if flag:
-				#break
 
-			#if i==0:
-				#print('ENDDDD')
-				#break
-			#self.event.clear()
+			time.sleep(1)
+
+		if self.id != 0:
+			self.broadcast_statistics()
 
 		return self.resolve_conflicts()
 
