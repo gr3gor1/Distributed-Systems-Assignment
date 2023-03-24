@@ -160,7 +160,7 @@ class node:
 		return True
 	
 	def broadcast_block(self, block):
-		print('broadcasting mined block...')
+		#print('broadcasting mined block...')
 		#cnt = 0
 		def broadcast(block):
 			address = 'http://' + str(node['ip']) + ':' + str(node['port']) + '/broadcast/block'
@@ -338,14 +338,12 @@ class node:
 				id, amount = line.split()
 				transactions.append([int(id[2]), int(amount)])
 	
-		flag = False
 		time.sleep(self.id*0.1)
 		for i, transaction in enumerate(transactions):
 			for node in self.ring:
 				if transaction[0] == node['id']:
 					new_transaction = self.create_transaction(node['public_key'],  transaction[1])
 					if not new_transaction:
-						flag = True
 						break
 					self.broadcast_transaction(new_transaction)
 					self.add_transaction_to_block(new_transaction, self.blockchain.chain[-1])
@@ -361,7 +359,7 @@ class node:
 				#break
 			#self.event.clear()
 
-		return transactions
+		return self.resolve_conflicts()
 
 	def view_transactions(self):
 		return self.blockchain.chain[-1].transactions

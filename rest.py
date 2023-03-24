@@ -42,6 +42,8 @@ def get_info():
                 print('Genesis block broadcasted')
             else:
                 print('Failed to broadcast the genesis block.')
+
+            print("Initializing...")
             
             time.sleep(1)
             initial_transaction = node_.create_transaction(node_.wallet.address, node_.total_nodes*100, initial_transaction=True)
@@ -54,12 +56,13 @@ def get_info():
                     node_.broadcast_transaction(new_transaction)
                     node_.add_transaction_to_block(new_transaction, node_.blockchain.chain[-1])
             
-            print('END OF INITIALIZATION')
             time.sleep(2)
+            print('End of initialization!')
+
             node_.broadcast_init_finished()
             node_.read_transactions()
 
-            time.sleep(1)
+            time.sleep(2)
             node_.resolve_conflicts()
 
         return jsonify(data), 200
@@ -83,7 +86,7 @@ def get_ring():
    
 @app.route('/broadcast/transaction', methods=['POST'])
 def get_transaction():
-    print("received transaction...", datetime.now())
+    #print("received transaction...", datetime.now())
     data = pickle.loads(request.get_data())
     if data.sender_address == "0":
         node_.add_transaction_to_block(data, node_.blockchain.chain[-1])
