@@ -256,7 +256,7 @@ def temp():
     def dummy(peer,ans):
         address = 'http://' + peer['ip'] + ':' + str(peer['port']) + '/temp_init'
         response = requests.get(address)
-        ans.append(response.content)
+        ans.append(response.status_code)
 
     ans = []
     for peer in node.ring:
