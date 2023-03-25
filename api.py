@@ -256,7 +256,7 @@ def temp():
     def dummy(peer,ans):
         address = 'http://' + peer['ip'] + ':' + str(peer['port']) + '/temp_init'
         response = requests.get(address)
-        ans.append(response.status_code)
+        ans.append(response.content)
 
     ans = []
     for peer in node.ring:
@@ -271,6 +271,9 @@ def temp():
 
 @api.route('/temp_init',methods = ['GET'])
 def temp_init():
+    time_counter = 0
+    transaction_counter = 0
+
     id = node.id
     credentials = None
     for cred in node.ring:
@@ -285,9 +288,12 @@ def temp_init():
             recipient = int(line[0][2])
             amount = int(line[1])
             string = {'id':recipient,'amount':amount}
+            start = time.time()
             response = requests.post(address,json=string)
+            stop_time = time.time() - start
             if response.status_code == 200:
-                print('Transaction completed')
+                time_counter += stop_time
+                transaction_counter += 1
             else:
                 print('Failure')
 

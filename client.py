@@ -150,16 +150,22 @@ def application():
             address = 'http://' + ip + ':' + port + '/five_nodes'
             response = requests.get(address)
 
+            if response.status_code == 200:
+                 print("OK")
+
         if action[0] == '10 nodes experiment':
             address = 'http://' + ip + ':' + port + '/ten_nodes'
             response = requests.get(address)
+
+            if response.status_code == 200:
+                 print("OK")
 
         if action[0] == 'Dummy experiment':
             address = 'http://' + ip + ':' + port + '/temp'
             response = requests.get(address)
 
             if response.status_code == 200:
-                 print("Started")
+                 print("OK")
             
 
         if action[0] == 'Terminate client':
